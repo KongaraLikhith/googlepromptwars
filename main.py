@@ -13,12 +13,14 @@ from routers import chat, maps, civic, calendar
 
 app = FastAPI(title="India Voter Education Assistant")
 
-# Configure CORS
+# Configure CORS securely
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 

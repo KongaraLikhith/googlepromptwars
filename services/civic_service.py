@@ -1,5 +1,6 @@
 import os
 import httpx
+from async_lru import alru_cache
 
 API_KEY = os.getenv("GOOGLE_CIVIC_API_KEY")
 BASE_URL = "https://www.googleapis.com/civicinfo/v2"
@@ -9,6 +10,7 @@ FALLBACK_RESPONSE = {
     "message": "Civic data not available for this region. Using alternative sources."
 }
 
+@alru_cache(maxsize=100)
 async def get_elections(address: str) -> dict:
     if not API_KEY:
         return {"error": "Civic API not configured", **FALLBACK_RESPONSE}
@@ -39,6 +41,7 @@ async def get_elections(address: str) -> dict:
     except Exception:
         return FALLBACK_RESPONSE
 
+@alru_cache(maxsize=100)
 async def get_voter_info(address: str, election_id: str = "2000") -> dict:
     if not API_KEY:
         return {"error": "Civic API not configured", **FALLBACK_RESPONSE}
@@ -71,6 +74,7 @@ async def get_voter_info(address: str, election_id: str = "2000") -> dict:
     except Exception:
         return FALLBACK_RESPONSE
 
+@alru_cache(maxsize=100)
 async def get_representatives(address: str) -> dict:
     if not API_KEY:
         return {"error": "Civic API not configured", **FALLBACK_RESPONSE}

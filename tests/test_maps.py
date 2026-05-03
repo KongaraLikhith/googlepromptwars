@@ -36,3 +36,16 @@ def test_geocode_address():
         data = response.json()
         assert data["success"] == True
         assert data["result"]["lat"] == 28.6139
+
+def test_geocode_non_india_address():
+    with patch('routers.maps.geocode_address') as mock_geocode:
+        mock_geocode.return_value = {
+            "error": "Please enter a valid location or address within India."
+        }
+        
+        response = client.get("/api/geocode?address=Texas")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] == False
+        assert data["result"]["error"] == "Please enter a valid location or address within India."

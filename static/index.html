@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://maps.googleapis.com; frame-src https://maps.google.com;">
     <title>India Voter Education Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -114,9 +115,9 @@
 
                 <!-- Input Area -->
                 <div class="p-4 bg-white border-t border-gray-200 flex gap-2">
-                    <input type="text" id="chat-input" class="flex-grow border border-gray-300 rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-saffron" placeholder="Ask anything about Indian elections..." onkeypress="handleEnter(event)">
-                    <button id="send-btn" onclick="sendMessage()" class="bg-saffron text-white rounded-full h-12 w-12 flex items-center justify-center hover:bg-orange-500 transition shadow-md focus:outline-none">
-                        <span class="text-xl">✈️</span>
+                    <input type="text" id="chat-input" class="flex-grow border border-gray-300 rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-saffron" placeholder="Ask anything about Indian elections..." aria-label="Chat input" onkeypress="handleEnter(event)">
+                    <button id="send-btn" onclick="sendMessage()" class="bg-saffron text-white rounded-full h-12 w-12 flex items-center justify-center hover:bg-orange-500 transition shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-saffron" aria-label="Send message">
+                        <span class="text-xl" aria-hidden="true">✈️</span>
                     </button>
                 </div>
             </div>
@@ -141,8 +142,10 @@
                 </div>
 
                 <!-- Loading spinner -->
-                <div id="maps-loading" class="hidden flex justify-center items-center py-10">
-                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron"></div>
+                <div id="maps-loading" class="hidden flex justify-center items-center py-10" aria-live="polite">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
                     <span class="ml-3 text-gray-600">Searching for polling stations...</span>
                 </div>
                 
@@ -171,8 +174,10 @@
         <div id="content-calendar" class="tab-content max-w-5xl mx-auto">
             <h2 class="text-2xl font-bold text-navy mb-6">📅 Important Election Events & Reminders</h2>
             
-            <div id="calendar-loading" class="flex justify-center items-center py-10">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron"></div>
+            <div id="calendar-loading" class="flex justify-center items-center py-10" aria-live="polite">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
             </div>
 
             <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">

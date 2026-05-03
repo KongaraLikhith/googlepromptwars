@@ -1,8 +1,10 @@
 import os
 import httpx
+from async_lru import alru_cache
 
 API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
+@alru_cache(maxsize=100)
 async def find_polling_stations(lat: float, lng: float) -> list:
     if not API_KEY:
         return []
@@ -57,6 +59,7 @@ async def find_polling_stations(lat: float, lng: float) -> list:
         print(f"Error fetching polling stations: {e}")
         return []
 
+@alru_cache(maxsize=100)
 async def geocode_address(address: str) -> dict:
     if not API_KEY:
         return {"error": "Maps API not configured"}
