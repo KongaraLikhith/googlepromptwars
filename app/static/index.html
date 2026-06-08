@@ -16,24 +16,6 @@
         </header>
 
         <main>
-            <!-- Embedded Chatbot UI (Available immediately) -->
-            <button id="chatbot-toggle" aria-label="Toggle Chatbot" style="margin-top: 0; margin-bottom: 2rem;">💬 Ask General Sustainability Questions</button>
-            <div id="chatbot-window" class="hidden" style="margin-top: 0; margin-bottom: 2rem;">
-                <div class="chatbot-header">
-                    <h3>Sustainability Chatbot</h3>
-                    <button id="chatbot-close" aria-label="Close Chatbot">&times;</button>
-                </div>
-                <div id="chatbot-messages">
-                    <div class="chat-message bot">
-                        Hi! I'm your sustainability assistant. Ask me anything about reducing your carbon footprint or the data you just submitted!
-                    </div>
-                </div>
-                <form id="chatbot-form">
-                    <input type="text" id="chatbot-input" placeholder="Type your message..." required autocomplete="off">
-                    <button type="submit" id="chatbot-send">Send</button>
-                </form>
-            </div>
-
             <form id="footprint-form" aria-label="Footprint Calculator Form">
                 <section class="form-group">
                     <label for="transport_miles_per_week">Transport (Miles per Week)</label>
@@ -96,6 +78,25 @@
             </div>
         </main>
     </div>
+
+    <!-- Floating Chatbot UI -->
+    <button id="chatbot-toggle" aria-label="Toggle Chatbot">💬</button>
+    <div id="chatbot-window" class="hidden">
+        <div class="chatbot-header">
+            <h3>Sustainability Chatbot</h3>
+            <button id="chatbot-close" aria-label="Close Chatbot">&times;</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-message bot">
+                Hi! I'm your sustainability assistant. Ask me anything about reducing your carbon footprint or the data you just submitted!
+            </div>
+        </div>
+        <form id="chatbot-form">
+            <input type="text" id="chatbot-input" placeholder="Type your message..." required autocomplete="off">
+            <button type="submit" id="chatbot-send">Send</button>
+        </form>
+    </div>
+
     <!-- Simple markdown parser for Gemini output -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/app.js"></script>
