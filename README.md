@@ -23,7 +23,7 @@ The core calculation engine (`app/calculator.py`) translates user inputs into po
 ### Technology Stack
 - **Backend:** Python 3.11, FastAPI
 - **Package Manager:** `uv` (Rust-based, incredibly fast resolution)
-- **AI Integration:** `google-generativeai` (Gemini 1.5)
+- **AI Integration:** `google-generativeai` (Gemini 2.5 Flash used for dynamic insights and conversational chatbot)
 - **Frontend:** HTML5, Vanilla CSS (Glassmorphism design), Vanilla JS
 - **Testing:** `pytest`
 - **Infrastructure:** Docker (Multi-stage builds)
