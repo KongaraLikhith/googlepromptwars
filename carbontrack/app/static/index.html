@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Footprint Awareness Platform</title>
+    <meta name="description" content="Track, understand, and reduce your carbon footprint with personalized AI insights.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Carbon Footprint AI Assistant</h1>
+            <p>Calculate your emissions & get dynamic reduction insights.</p>
+        </header>
+
+        <main>
+            <form id="footprint-form" aria-label="Footprint Calculator Form">
+                <section class="form-group">
+                    <label for="transport_miles_per_week">Transport (Miles per Week)</label>
+                    <input type="number" id="transport_miles_per_week" name="transport_miles_per_week" required min="0" value="100">
+                </section>
+                
+                <section class="form-group">
+                    <label for="mpg">Vehicle Efficiency (MPG)</label>
+                    <input type="number" id="mpg" name="mpg" required min="1" value="25">
+                </section>
+
+                <section class="form-group">
+                    <label for="electricity_kwh_per_month">Electricity (kWh per Month)</label>
+                    <input type="number" id="electricity_kwh_per_month" name="electricity_kwh_per_month" required min="0" value="500">
+                </section>
+
+                <section class="form-group">
+                    <label for="diet_type">Dietary Profile</label>
+                    <select id="diet_type" name="diet_type" required>
+                        <option value="vegan">Vegan</option>
+                        <option value="vegetarian">Vegetarian</option>
+                        <option value="omnivore" selected>Omnivore</option>
+                        <option value="heavy_meat">Heavy Meat</option>
+                    </select>
+                </section>
+
+                <button type="submit" id="calculate-btn">Calculate Footprint & Get Insights</button>
+            </form>
+
+            <div id="results-container" class="hidden" aria-live="polite">
+                <div class="loader hidden" id="loader"></div>
+                <div id="results-content" class="hidden">
+                    <h2>Your Monthly Footprint Breakdown</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Transport</h3>
+                            <p id="res-transport">0 lbs CO₂</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Energy</h3>
+                            <p id="res-energy">0 lbs CO₂</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Diet</h3>
+                            <p id="res-diet">0 lbs CO₂</p>
+                        </div>
+                        <div class="metric-card highlight-card">
+                            <h3>Total</h3>
+                            <p id="res-total">0 lbs CO₂</p>
+                        </div>
+                    </div>
+                    
+                    <div class="insights-section">
+                        <h2>Gemini AI Assistant Insights</h2>
+                        <div id="ai-insights" class="markdown-body">
+                            <!-- Insights injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Chatbot UI -->
+    <button id="chatbot-toggle" aria-label="Toggle Chatbot">💬</button>
+    <div id="chatbot-window" class="hidden">
+        <div class="chatbot-header">
+            <h3>Sustainability Chatbot</h3>
+            <button id="chatbot-close" aria-label="Close Chatbot">&times;</button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="chat-message bot">
+                Hi! I'm your sustainability assistant. Ask me anything about reducing your carbon footprint or the data you just submitted!
+            </div>
+        </div>
+        <form id="chatbot-form">
+            <label for="chatbot-input" class="sr-only" style="display: none;">Type your message</label>
+            <input type="text" id="chatbot-input" aria-label="Type your message to the chatbot" placeholder="Type your message..." required autocomplete="off">
+            <button type="submit" id="chatbot-send">Send</button>
+        </form>
+    </div>
+
+    <!-- Simple markdown parser for Gemini output -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
