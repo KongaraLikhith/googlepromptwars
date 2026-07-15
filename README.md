@@ -1,2 +1,7 @@
 # Google Prompt Wars
-Combined monorepo for carbontrack and voter-education-assistant.
+
+A repository containing all the Prompt Wars challenges and related projects.
+
+### Includes:
+- `carbontrack`
+- `voter-education-assistant`
