@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StadiumPulse | Matchday intelligence</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#assistant">Skip to matchday assistant</a>
+  <header><p class="eyebrow">FIFA WORLD CUP 2026 · DEMO</p><h1>Stadium<span>Pulse</span></h1><p>Calmer arrivals. Clearer decisions. Better matchdays.</p></header>
+  <main>
+    <section class="hero" aria-labelledby="mission"><div><p class="eyebrow">Live venue simulation</p><h2 id="mission">A matchday copilot for every fan and venue team.</h2><p>Generative AI turns crowd signals into multilingual, accessibility-aware guidance—without pretending simulated data is live.</p></div><div class="score" aria-label="Match status"><strong>USA 0 — 0 MEX</strong><span>Kickoff in 01:42:18</span><small>MetLife Stadium · Simulated</small></div></section>
+    <section class="metrics" aria-label="Venue signals"><article><span>Arrival flow</span><strong id="flow">Moderate</strong><small>East concourse easing</small></article><article><span>Recommended gate</span><strong id="gate">Gate C</strong><small>12 min walking time</small></article><article><span>Transit</span><strong id="transit">On schedule</strong><small>Rail platform 2</small></article><article><span>Waste diversion</span><strong>76%</strong><small>Target: 80%</small></article></section>
+    <section class="grid"><article id="assistant" class="panel"><p class="eyebrow">Fan concierge</p><h2>Ask StadiumPulse</h2><p class="muted">Route choices adapt to the profile below. No identity or precise location is stored.</p>
+      <div class="controls"><label>Language<select id="language"><option>English</option><option>Spanish</option><option>French</option><option>Arabic</option></select></label><label>Mobility needs<select id="mobility"><option value="standard">Standard route</option><option value="step-free">Step-free route</option></select></label></div>
+      <div class="suggestions"><button data-question="What is the easiest route to my gate?">Best route</button><button data-question="Where can I refill my water bottle?">Water refill</button><button data-question="How can I leave after the match with less crowding?">Quieter exit</button></div>
+      <form id="chat-form"><label class="sr-only" for="question">Your question</label><textarea id="question" maxlength="500" placeholder="Ask about your arrival, route, amenities, or exit plan…" required></textarea><button class="primary" type="submit">Get guidance</button></form>
+      <div id="answer" class="answer" aria-live="polite">Choose a prompt or ask a question to receive matchday guidance.</div></article>
+      <aside class="panel ops"><p class="eyebrow">Operations brief</p><h2>Act before queues build.</h2><div class="alert"><strong>Queue pressure · North Plaza</strong><p>Projected to reach 78% in 18 minutes. Reassign two volunteers to wayfinding and recommend Gate C in fan guidance.</p><button id="resolve">Mark actioned</button></div><ul><li><b>12:20</b> Spanish wayfinding demand increased near transit.</li><li><b>12:12</b> Step-free elevator wait: 3 minutes.</li><li><b>12:05</b> Recycling station 4 is nearing capacity.</li></ul><p class="notice">Operational signals are simulated for demonstration. Staff retain final decision authority.</p></aside></section>
+    <section class="principles"><article><h3>Accessible by default</h3><p>Keyboard-friendly controls, clear contrast, simple language, and step-free route context.</p></article><article><h3>Human-in-the-loop</h3><p>AI suggests; trained venue staff make operational and safety decisions.</p></article><article><h3>Privacy-minimizing</h3><p>Only temporary, coarse preferences are sent for a response—never ticket, identity, or GPS data.</p></article></section>
+  </main><footer>StadiumPulse is an independent prototype. FIFA World Cup 2026 references are for challenge context only.</footer><script src="app.js"></script>
+</body></html>
