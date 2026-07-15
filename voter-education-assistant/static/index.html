@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://maps.googleapis.com; frame-src https://maps.google.com https://www.google.com https://www.youtube.com;">
+    <title>India Voter Education Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        saffron: '#FF9933',
+                        green: '#138808',
+                        navy: '#000080',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-header {
+            background: linear-gradient(to right, #FF9933, #FFFFFF, #138808);
+        }
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+            height: 6px;
+            width: 6px;
+            background-color: #333;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 1px;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-btn.active { 
+            border-bottom-width: 4px;
+            border-color: #FF9933;
+            color: #FF9933;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="gradient-header py-6 shadow-md border-b-4 border-navy">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-navy mb-2">
+                🗳️ India Voter Education Assistant <span class="text-navy">☸️</span>
+            </h1>
+            <p class="text-lg font-semibold text-gray-800 mb-3 bg-white/70 inline-block px-4 py-1 rounded-full">
+                Empowering Every Indian Voter | Powered by Gemini AI
+            </p>
+            <div class="flex flex-wrap justify-center gap-2 text-xs font-medium mt-2">
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Gemini AI</span>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded">Google Maps</span>
+                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Civic API</span>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">Google Calendar</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap justify-center sm:justify-start" role="tablist" aria-label="Main Navigation">
+                <button onclick="showTab('chat')" id="tab-chat" role="tab" aria-selected="true" aria-controls="content-chat" class="tab-btn active px-4 py-3 sm:px-6 hover:bg-gray-50 transition">💬 Chat Assistant</button>
+                <button onclick="showTab('maps')" id="tab-maps" role="tab" aria-selected="false" aria-controls="content-maps" class="tab-btn px-4 py-3 sm:px-6 hover:bg-gray-50 transition">🗺️ Find Polling Station</button>
+                <button onclick="showTab('calendar')" id="tab-calendar" role="tab" aria-selected="false" aria-controls="content-calendar" class="tab-btn px-4 py-3 sm:px-6 hover:bg-gray-50 transition">📅 Election Calendar</button>
+                <button onclick="showTab('guide')" id="tab-guide" role="tab" aria-selected="false" aria-controls="content-guide" class="tab-btn px-4 py-3 sm:px-6 hover:bg-gray-50 transition">📚 Voter Guide</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6 flex-grow">
+
+        <!-- TAB 1: Chat Assistant -->
+        <div id="content-chat" class="tab-content active max-w-4xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-[600px]">
+                
+                <div id="chat-messages" class="flex-grow p-4 overflow-y-auto bg-gray-50 space-y-4">
+                    <!-- Welcome Message -->
+                    <div class="flex justify-start">
+                        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-5 py-3 max-w-[85%] shadow-sm">
+                            <p class="text-gray-800"><span class="text-xl mr-2">🤖</span> Namaste! 🙏 I'm your India Voter Education Assistant. Ask me anything about elections, voter registration, or the voting process!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div id="typing-indicator" class="hidden px-6 py-2 bg-gray-50">
+                    <div class="bg-gray-200 rounded-full px-3 py-2 inline-flex typing-indicator">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <!-- Quick Suggestions -->
+                <div class="px-4 py-2 bg-white border-t border-gray-100 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    <button onclick="sendQuickMessage('How do I register to vote? 🗳️')" class="whitespace-nowrap bg-orange-50 text-orange-700 border border-orange-200 rounded-full px-4 py-1 text-sm hover:bg-orange-100 transition">How do I register to vote? 🗳️</button>
+                    <button onclick="sendQuickMessage('What is an EVM machine? 🖥️')" class="whitespace-nowrap bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-4 py-1 text-sm hover:bg-blue-100 transition">What is an EVM machine? 🖥️</button>
+                    <button onclick="sendQuickMessage('When are Lok Sabha elections? 📅')" class="whitespace-nowrap bg-green-50 text-green-700 border border-green-200 rounded-full px-4 py-1 text-sm hover:bg-green-100 transition">When are Lok Sabha elections? 📅</button>
+                    <button onclick="sendQuickMessage('What is NOTA? ❓')" class="whitespace-nowrap bg-gray-50 text-gray-700 border border-gray-200 rounded-full px-4 py-1 text-sm hover:bg-gray-100 transition">What is NOTA? ❓</button>
+                    <button onclick="sendQuickMessage('How to find my polling booth? 📍')" class="whitespace-nowrap bg-purple-50 text-purple-700 border border-purple-200 rounded-full px-4 py-1 text-sm hover:bg-purple-100 transition">How to find my polling booth? 📍</button>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 bg-white border-t border-gray-200 flex gap-2">
+                    <input type="text" id="chat-input" class="flex-grow border border-gray-300 rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-saffron" placeholder="Ask anything about Indian elections..." aria-label="Chat input" onkeypress="handleEnter(event)">
+                    <button id="send-btn" onclick="sendMessage()" class="bg-saffron text-white rounded-full h-12 w-12 flex items-center justify-center hover:bg-orange-500 transition shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-saffron" aria-label="Send message">
+                        <span class="text-xl" aria-hidden="true">✈️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Maps -->
+        <div id="content-maps" class="tab-content max-w-5xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                <h2 class="text-2xl font-bold text-navy mb-4">🗺️ Find Your Polling Station</h2>
+                
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <div class="flex-grow flex gap-2">
+                        <input type="text" id="address-input" class="flex-grow border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-saffron" placeholder="Enter your city or area (e.g., Connaught Place, New Delhi)">
+                        <button onclick="searchByAddress()" class="bg-navy text-white px-6 py-2 rounded-lg hover:bg-blue-900 transition shadow">Search</button>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <span class="text-gray-500 mx-2 font-bold">OR</span>
+                    </div>
+                    <button onclick="useMyLocation()" class="bg-green text-white px-6 py-2 rounded-lg hover:bg-green-700 transition shadow flex items-center justify-center gap-2">
+                        <span>📍 Use My Current Location</span>
+                    </button>
+                </div>
+
+                <!-- Loading spinner -->
+                <div id="maps-loading" class="hidden flex justify-center items-center py-10" aria-live="polite">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <span class="ml-3 text-gray-600">Searching for polling stations...</span>
+                </div>
+                
+                <!-- Error msg -->
+                <div id="maps-error" class="hidden bg-red-50 text-red-700 p-4 rounded-lg mb-4 border border-red-200"></div>
+
+                <!-- Map Container -->
+                <div id="map-container" class="w-full h-[400px] bg-gray-200 rounded-lg mb-6 overflow-hidden border border-gray-300 relative flex items-center justify-center">
+                    <p class="text-gray-500">Map will appear here after searching</p>
+                </div>
+
+                <!-- Civic Info Section -->
+                <div id="civic-info-container" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 class="text-lg font-bold text-blue-900 mb-2">🏛️ Election Officials & Information</h3>
+                    <div id="civic-info-content" class="text-sm text-blue-800"></div>
+                </div>
+
+                <!-- Results List -->
+                <div id="stations-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cards will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Calendar -->
+        <div id="content-calendar" class="tab-content max-w-5xl mx-auto">
+            <h2 class="text-2xl font-bold text-navy mb-6">📅 Important Election Events & Reminders</h2>
+            
+            <div id="calendar-loading" class="flex justify-center items-center py-10" aria-live="polite">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-saffron" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+
+            <div id="events-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+                <!-- Events will be injected here -->
+            </div>
+            
+            <div class="mt-10 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <h3 class="text-xl font-bold text-navy mb-4">Check Elections in Your Area</h3>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="election-address-input" class="flex-grow border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-saffron" placeholder="Enter your full address or pin code">
+                    <button onclick="searchElections()" class="bg-saffron text-white px-6 py-2 rounded-lg hover:bg-orange-500 transition shadow">Check Elections</button>
+                </div>
+                <div id="election-results" class="mt-4 hidden"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Guide -->
+        <div id="content-guide" class="tab-content max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-navy mb-6">📚 Complete Voter Guide</h2>
+            
+            <div class="space-y-4" id="accordion-container">
+                
+                <!-- Accordion Item 1 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc1')">
+                        <span class="font-bold text-lg text-gray-800">📝 How to Register as a Voter</span>
+                        <span id="icon-acc1" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc1" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ol class="list-decimal pl-5 space-y-2">
+                            <li>Visit the official portal: <a href="https://voters.eci.gov.in" target="_blank" class="text-blue-600 hover:underline">voters.eci.gov.in</a></li>
+                            <li>Click on <strong>"New Voter Registration" (Form 6)</strong></li>
+                            <li>Fill in personal details, address, and upload required documents.</li>
+                            <li><strong>Required documents:</strong> Aadhaar card, age proof (birth certificate/10th mark sheet), address proof (utility bill/passport), and a recent passport-size photo.</li>
+                            <li>Submit the form and save the reference number to track your status.</li>
+                            <li>Once approved, your Voter ID (EPIC card) will be delivered to your registered address via post.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Accordion Item 2 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc2')">
+                        <span class="font-bold text-lg text-gray-800">🖥️ Understanding EVMs and VVPAT</span>
+                        <span id="icon-acc2" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc2" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ul class="list-disc pl-5 space-y-2 mb-4">
+                            <li><strong>EVM (Electronic Voting Machine):</strong> A secure device used to cast votes electronically, replacing paper ballots.</li>
+                            <li><strong>How to use:</strong> Press the blue button next to the name and symbol of your chosen candidate. A red light will glow, and you will hear a long beep confirming your vote.</li>
+                            <li><strong>VVPAT (Voter Verifiable Paper Audit Trail):</strong> An independent verification system attached to the EVM.</li>
+                            <li><strong>How VVPAT works:</strong> After you press the button, a paper slip containing the serial number, name, and symbol of the candidate is printed and remains visible behind a transparent window for 7 seconds before falling into a sealed drop box.</li>
+                            <li><strong>Security:</strong> EVMs are standalone machines, not connected to the internet, making them immune to online hacking.</li>
+                        </ul>
+                        <div class="mt-4 bg-gray-200 p-2 rounded-lg" style="aspect-ratio: 16/9;">
+                            <iframe width="100%" height="100%" src="https://www.youtube.com/embed/zR7-e4g9oZc" title="How to Vote using EVM-VVPAT" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accordion Item 3 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc3')">
+                        <span class="font-bold text-lg text-gray-800">📋 Model Code of Conduct (MCC)</span>
+                        <span id="icon-acc3" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc3" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>What it is:</strong> A set of guidelines issued by the Election Commission of India for political parties and candidates during elections to ensure free and fair polling.</li>
+                            <li><strong>When it applies:</strong> It comes into force the moment the election schedule is announced and remains in effect until the results are declared.</li>
+                            <li><strong>Prohibitions:</strong> Hate speech, bribing voters, using government resources for campaigning, announcing new financial grants, or laying foundation stones of projects.</li>
+                            <li><strong>Reporting violations:</strong> Citizens can report violations using the <strong>cVIGIL app</strong> or by calling the <strong>1950</strong> voter helpline.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Accordion Item 4 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc4')">
+                        <span class="font-bold text-lg text-gray-800">🏛️ Types of Elections in India</span>
+                        <span id="icon-acc4" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc4" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>Lok Sabha (General Elections):</strong> Citizens vote to elect Members of Parliament (MPs) to the lower house. The party/coalition with a majority (272+ out of 543 seats) forms the Central Government and chooses the Prime Minister. Held every 5 years.</li>
+                            <li><strong>State Assembly (Vidhan Sabha):</strong> Citizens vote to elect Members of Legislative Assembly (MLAs). The majority forms the State Government and chooses the Chief Minister.</li>
+                            <li><strong>Rajya Sabha:</strong> The upper house of Parliament. Members are indirectly elected by MLAs, not directly by citizens.</li>
+                            <li><strong>Local Body Elections:</strong> Elections for Municipal Corporations (urban) and Panchayats (rural).</li>
+                            <li><strong>Presidential Election:</strong> Indirect election by an electoral college consisting of elected MPs and MLAs.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Accordion Item 5 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc5')">
+                        <span class="font-bold text-lg text-gray-800">🗳️ What is NOTA?</span>
+                        <span id="icon-acc5" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc5" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>Meaning:</strong> "None Of The Above"</li>
+                            <li><strong>Introduction:</strong> Introduced in 2013 following a Supreme Court order to give voters the right to register a negative opinion.</li>
+                            <li><strong>How to vote:</strong> It is the last button on the EVM panel, marked with a specific symbol.</li>
+                            <li><strong>Impact:</strong> NOTA votes are counted but do not affect the election result. Even if NOTA gets the highest votes, the candidate with the next highest votes is declared the winner.</li>
+                            <li><strong>Significance:</strong> It empowers citizens to send a strong message of dissatisfaction to political parties regarding the quality of candidates fielded.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Accordion Item 6 -->
+                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <button class="w-full px-6 py-4 text-left flex justify-between items-center focus:outline-none" onclick="toggleAccordion('acc6')">
+                        <span class="font-bold text-lg text-gray-800">📍 What to Carry on Election Day</span>
+                        <span id="icon-acc6" class="text-saffron font-bold text-xl transition-transform">+</span>
+                    </button>
+                    <div id="content-acc6" class="hidden px-6 py-4 border-t border-gray-100 bg-gray-50 text-gray-700">
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>You <strong>must</strong> carry an approved ID document to cast your vote.</li>
+                            <li><strong>Primary ID:</strong> Voter ID card (EPIC).</li>
+                            <li><strong>Alternative IDs (if you don't have EPIC):</strong> Aadhaar Card, PAN Card, Driving License, Indian Passport, MGNREGA Job Card, Passbooks with photo issued by Bank/Post Office, Smart Card issued by RGI under NPR, Health Insurance Smart Card (Ministry of Labour), Pension Document with photo, Official ID cards issued to MPs/MLAs/MLCs, or Service ID Cards with photograph issued by Central/State Govt/PSUs.</li>
+                            <li><strong>Note:</strong> Voter slips distributed by political parties are <strong>not</strong> accepted as valid ID. Only the official voter information slip along with one of the above IDs is acceptable.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-navy text-white py-8 mt-auto border-t-4 border-saffron">
+        <div class="container mx-auto px-4 text-center">
+            <h3 class="text-xl font-bold mb-2">🗳️ India Voter Education Assistant</h3>
+            <p class="text-gray-300 text-sm mb-4">Powered by Google Gemini AI | Google Maps | Google Civic Information API</p>
+            <div class="flex justify-center gap-4 text-sm text-blue-200 mb-4">
+                <a href="https://eci.gov.in" target="_blank" class="hover:text-white transition">eci.gov.in</a>
+                <span>|</span>
+                <a href="https://voters.eci.gov.in" target="_blank" class="hover:text-white transition">voters.eci.gov.in</a>
+            </div>
+            <p class="text-saffron font-bold text-lg">National Voter Helpline: 1950</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // CONFIG - map script will be loaded dynamically
+        let map;
+        let markers = [];
+        
+        // --- Navigation ---
+        function showTab(tabId) {
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Remove active from all tabs
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Show selected
+            document.getElementById('content-' + tabId).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            // Load calendar if tab is calendar and empty
+            if (tabId === 'calendar' && document.getElementById('events-grid').children.length === 0) {
+                loadElectionEvents();
+            }
+        }
+
+        // --- Chat Assistant ---
+        let chatHistory = [];
+
+        function sendQuickMessage(text) {
+            document.getElementById('chat-input').value = text;
+            sendMessage();
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function addMessageToChat(role, content) {
+            const chatBox = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = "flex " + (role === 'user' ? "justify-end" : "justify-start");
+            
+            let innerHtml = '';
+            if (role === 'user') {
+                innerHtml = `
+                    <div class="bg-saffron text-white rounded-2xl rounded-tr-none px-5 py-3 max-w-[85%] shadow-sm">
+                        <p>${content}</p>
+                    </div>
+                `;
+            } else {
+                // Convert simple markdown to HTML (bold, lists, line breaks)
+                let formattedContent = content
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                
+                innerHtml = `
+                    <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-5 py-3 max-w-[85%] shadow-sm text-gray-800">
+                        <div class="flex items-start gap-2">
+                            <span class="text-xl mt-1">🤖</span>
+                            <div>${formattedContent}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = innerHtml;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const inputEl = document.getElementById('chat-input');
+            const text = inputEl.value.trim();
+            if (!text) return;
+
+            // Update UI
+            inputEl.value = '';
+            inputEl.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            
+            addMessageToChat('user', text);
+            document.getElementById('typing-indicator').classList.remove('hidden');
+            
+            // Scroll to bottom
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, history: chatHistory })
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('typing-indicator').classList.add('hidden');
+                
+                if (data.success) {
+                    addMessageToChat('assistant', data.response);
+                    // Add to history
+                    chatHistory.push({ role: 'user', content: text });
+                    chatHistory.push({ role: 'assistant', content: data.response });
+                } else {
+                    addMessageToChat('assistant', "Sorry, I encountered an error. Please try again.");
+                }
+            } catch (err) {
+                document.getElementById('typing-indicator').classList.add('hidden');
+                addMessageToChat('assistant', "Network error. Please check your connection.");
+            }
+
+            inputEl.disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            inputEl.focus();
+        }
+
+        // --- Maps & Polling Stations ---
+        
+        // Dynamically load Google Maps script (we don't have the API key on frontend directly, but we can try to render a static map or iframe, or fetch coordinates and show in an iframe)
+        // Since we need to use Maps JS API, we'll implement a fallback if key isn't provided to frontend, using an iframe embed
+        
+        function updateMapIframe(lat, lng) {
+            const container = document.getElementById('map-container');
+            container.innerHTML = `<iframe 
+                width="100%" height="100%" frameborder="0" style="border:0" 
+                src="https://maps.google.com/maps?q=${lat},${lng}&z=13&output=embed" allowfullscreen>
+            </iframe>`;
+        }
+
+        async function useMyLocation() {
+            if (!navigator.geolocation) {
+                showMapsError("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            showMapsLoading(true);
+            hideMapsError();
+            document.getElementById('stations-list').innerHTML = '';
+            document.getElementById('civic-info-container').classList.add('hidden');
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    updateMapIframe(lat, lng);
+                    await loadPollingStations(lat, lng);
+                },
+                (error) => {
+                    showMapsLoading(false);
+                    showMapsError("Unable to retrieve your location. Please type your address instead.");
+                }
+            );
+        }
+
+        async function searchByAddress() {
+            const address = document.getElementById('address-input').value.trim();
+            if (!address) return;
+
+            showMapsLoading(true);
+            hideMapsError();
+            document.getElementById('stations-list').innerHTML = '';
+            document.getElementById('civic-info-container').classList.add('hidden');
+            document.getElementById('map-container').innerHTML = '<p class="text-gray-500">Map will appear here after searching</p>';
+
+            try {
+                // Get coords
+                const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(address)}`);
+                const geoData = await geoRes.json();
+                
+                if (geoData.success) {
+                    const { lat, lng } = geoData.result;
+                    updateMapIframe(lat, lng);
+                    
+                    // Parallel load stations and civic info
+                    await Promise.all([
+                        loadPollingStations(lat, lng),
+                        loadCivicInfo(address)
+                    ]);
+                } else {
+                    showMapsLoading(false);
+                    showMapsError(geoData.result.error || "Address not found.");
+                }
+            } catch (err) {
+                showMapsLoading(false);
+                showMapsError("Network error. Try again.");
+            }
+        }
+
+        async function loadPollingStations(lat, lng) {
+            try {
+                const response = await fetch('/api/polling-locations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng })
+                });
+                
+                const data = await response.json();
+                showMapsLoading(false);
+                
+                const list = document.getElementById('stations-list');
+                list.innerHTML = '';
+                
+                if (data.success && data.locations.length > 0) {
+                    data.locations.forEach(loc => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition";
+                        card.innerHTML = `
+                            <div class="flex items-start gap-3">
+                                <div class="bg-blue-100 text-blue-600 rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 mt-1">
+                                    📍
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800">${loc.name}</h4>
+                                    <p class="text-sm text-gray-600 mt-1">${loc.address}</p>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}&query_place_id=${loc.place_id}" target="_blank" class="inline-block mt-2 text-sm text-saffron font-semibold hover:underline">Get Directions ↗</a>
+                                </div>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                } else {
+                    list.innerHTML = `
+                        <div class="col-span-full bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-center">
+                            No designated polling stations found nearby via Maps API. <br>
+                            <strong>Please visit <a href="https://voters.eci.gov.in" target="_blank" class="underline">voters.eci.gov.in</a> or use the Voter Helpline App to find your exact booth.</strong>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                showMapsLoading(false);
+                showMapsError("Failed to fetch polling locations.");
+            }
+        }
+
+        async function loadCivicInfo(address) {
+            try {
+                const response = await fetch(`/api/voter-info?address=${encodeURIComponent(address)}`);
+                const data = await response.json();
+                
+                if (data.success && !data.fallback) {
+                    const container = document.getElementById('civic-info-container');
+                    const content = document.getElementById('civic-info-content');
+                    
+                    let html = "";
+                    if (data.polling_locations && data.polling_locations.length > 0) {
+                        html += `<strong>Official Polling Location:</strong> ${data.polling_locations[0].address.locationName}<br>`;
+                        html += `${data.polling_locations[0].address.line1}, ${data.polling_locations[0].address.city}<br><br>`;
+                    }
+                    
+                    if (data.officials && data.officials.length > 0) {
+                        const state = data.officials[0];
+                        if (state.electionAdministrationBody) {
+                            const admin = state.electionAdministrationBody;
+                            if (admin.name) html += `<strong>Admin Body:</strong> ${admin.name}<br>`;
+                            if (admin.electionInfoUrl) html += `<a href="${admin.electionInfoUrl}" target="_blank" class="underline text-blue-600">Official Election Info ↗</a><br>`;
+                        }
+                    }
+                    
+                    if (html) {
+                        content.innerHTML = html;
+                        container.classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                // Ignore silent failure for civic info
+                console.error("Civic info error", err);
+            }
+        }
+
+        function showMapsLoading(show) {
+            const el = document.getElementById('maps-loading');
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        function showMapsError(msg) {
+            const el = document.getElementById('maps-error');
+            el.innerHTML = msg;
+            el.classList.remove('hidden');
+        }
+
+        function hideMapsError() {
+            document.getElementById('maps-error').classList.add('hidden');
+        }
+
+        // --- Calendar ---
+        async function loadElectionEvents() {
+            const loading = document.getElementById('calendar-loading');
+            const grid = document.getElementById('events-grid');
+            
+            try {
+                const response = await fetch('/api/election-events');
+                const data = await response.json();
+                
+                loading.classList.add('hidden');
+                grid.classList.remove('hidden');
+                grid.innerHTML = '';
+                
+                if (data.success && data.events.length > 0) {
+                    data.events.forEach(ev => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition flex flex-col h-full";
+                        card.innerHTML = `
+                            <div class="text-3xl mb-3">${ev.icon}</div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2">${ev.title}</h3>
+                            <p class="text-gray-600 text-sm mb-4 flex-grow">${ev.description}</p>
+                            <a href="${ev.calendar_link}" target="_blank" class="block w-full text-center bg-blue-50 text-blue-700 font-semibold py-2 rounded-lg hover:bg-blue-100 transition border border-blue-200">
+                                📅 Add to Google Calendar
+                            </a>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
+            } catch (err) {
+                loading.classList.add('hidden');
+                grid.innerHTML = `<div class="col-span-full text-center text-red-500">Failed to load events.</div>`;
+            }
+        }
+
+        async function searchElections() {
+            const address = document.getElementById('election-address-input').value.trim();
+            if (!address) return;
+
+            const resDiv = document.getElementById('election-results');
+            resDiv.classList.remove('hidden');
+            resDiv.innerHTML = `<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-saffron mx-auto mt-4"></div>`;
+
+            try {
+                const response = await fetch(`/api/elections?address=${encodeURIComponent(address)}`);
+                const data = await response.json();
+                
+                if (data.success && !data.fallback && data.elections && data.elections.length > 0) {
+                    let html = `<div class="mt-4 space-y-3">`;
+                    data.elections.forEach(el => {
+                        html += `
+                            <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+                                <h4 class="font-bold text-green-900">${el.name}</h4>
+                                <p class="text-green-800 text-sm">Date: ${el.electionDay}</p>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                    resDiv.innerHTML = html;
+                } else {
+                    resDiv.innerHTML = `
+                        <div class="mt-4 bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-yellow-800 text-sm">
+                            ${data.message || "No specific local elections found right now. Remember, Lok Sabha elections are held nationwide."}
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                resDiv.innerHTML = `<div class="mt-4 text-red-500 text-sm">Error checking elections.</div>`;
+            }
+        }
+
+        // --- Voter Guide Accordion ---
+        function toggleAccordion(id) {
+            const content = document.getElementById('content-' + id);
+            const icon = document.getElementById('icon-' + id);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.innerHTML = '-';
+                icon.style.transform = "rotate(180deg)";
+            } else {
+                content.classList.add('hidden');
+                icon.innerHTML = '+';
+                icon.style.transform = "rotate(0deg)";
+            }
+        }
+
+    </script>
+</body>
+</html>
