@@ -9,7 +9,7 @@ StadiumPulse is a GenAI-enabled matchday copilot for the FIFA World Cup 2026 cha
 ## What it demonstrates
 
 - **Contextual AI concierge:** a fan asks a natural-language question. Gemini receives only a short question plus coarse, temporary preferences and simulated venue signals, then returns a concise next action in the chosen language.
-- **Crowd-aware decisions:** when the north plaza queue is projected to rise, guidance recommends the calmer Gate C route and the operations panel proposes a volunteer reassignment.
+- **Crowd-aware decisions:** an inspectable rule engine evaluates bounded queue, transit, accessibility, and sustainability signals. At 70% projected congestion it reroutes fans to Gate C and recommends a volunteer reassignment. Gemini explains that decision; it never makes or overrides it.
 - **Accessible experience:** step-free routing is a first-class preference; the UI is keyboard operable, responsive, high-contrast, and uses accessible labels/status messages.
 - **Human control and safe boundaries:** operational signals are explicitly marked simulated, staff retain final authority, and the AI prompt disallows emergency, medical, security, and invented "live" advice.
 - **Sustainability visibility:** the dashboard exposes waste-diversion progress so teams can act on venue sustainability goals.
@@ -25,6 +25,12 @@ Browser (accessible HTML/CSS/JS)
 ```
 
 When `GEMINI_API_KEY` is absent or Gemini is unavailable, the app uses an explicitly labelled local simulation fallback. This makes the prototype usable for reviewers without exposing any secret or presenting fabricated data as live.
+
+## Decision logic and evaluation evidence
+
+`api/decision_engine.py` is deliberately separate from the GenAI endpoint. It validates all numerical venue signals, applies a documented 70% congestion reroute threshold, increases the arrival buffer for transit disruption, selects step-free routing when requested, and emits an explicit operational action for venue staff. The API returns the reasons with every recommendation, so decisions are explainable to both fans and operators.
+
+Gemini receives the bounded decision after it has been made and can only explain it in the selected language. Prompt-injection instructions in a visitor question cannot alter the route, operational action, or safety boundaries.
 
 ## Run locally
 
@@ -47,8 +53,10 @@ Copy `.env.example` to `.env` and add a newly generated Gemini API key. Do not c
 ## Tests
 
 ```bash
-python -m pytest stadiumpulse/tests
+python -m unittest discover -s stadiumpulse/tests
 ```
+
+The suite validates input bounds, congestion rerouting, step-free routing, transit-delay buffers, multilingual fallback behavior, and key-free operation.
 
 ## Assumptions and limitations
 
