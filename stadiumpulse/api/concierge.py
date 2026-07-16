@@ -5,7 +5,10 @@ import os
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from decision_engine import ALLOWED_MOBILITY, VenueSignals, recommend_route
+try:  # Vercel imports this function as api.concierge.
+    from api.decision_engine import ALLOWED_MOBILITY, VenueSignals, recommend_route
+except ModuleNotFoundError:  # Supports direct local execution and isolated tests.
+    from decision_engine import ALLOWED_MOBILITY, VenueSignals, recommend_route
 
 
 MAX_MESSAGE_LENGTH = 500

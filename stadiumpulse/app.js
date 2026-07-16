@@ -27,7 +27,10 @@ document.querySelector('#chat-form').addEventListener('submit', async event => {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({message: question, context: context()})
     });
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json')
+      ? await response.json()
+      : {error: 'Guidance is temporarily unavailable. Please ask a venue team member.'};
     if (!response.ok) throw new Error(data.error);
     const reasons = data.decision?.reasons?.join(' · ');
     answer.textContent = reasons ? `${data.reply}\n\nWhy: ${reasons}` : data.reply;
