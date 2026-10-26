@@ -1,6 +1,7 @@
 import asyncio
 from datetime import date, timedelta
 import json
+import logging
 
 import httpx
 import pytest
@@ -112,3 +113,37 @@ def test_upstream_failures_fall_back_and_capacity_recovers(monkeypatch, failure)
         recovered = await enrich_plan(sample(), build_plan(sample()))
         assert recovered.source == "gemini"
     asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("failure", ["http-status", "timeout"])
+def test_failure_diagnostics_exclude_credentials_private_text_and_errors(monkeypatch, caplog, failure):
+    key = "PRIVATE_KEY_MUST_NEVER_APPEAR"
+    private_text = "PRIVATE_EVENT_PREFERENCES_MUST_NEVER_APPEAR"
+    monkeypatch.setenv("GEMINI_API_KEY", key)
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    request = sample().model_copy(update={"preferences": private_text})
+
+    def handle(http_request):
+        if failure == "timeout":
+            raise httpx.ReadTimeout(private_text + key, request=http_request)
+        return httpx.Response(429, json={"error": {"message": private_text + key}})
+
+    real_client = httpx.AsyncClient
+
+    def client(**kwargs):
+        assert kwargs["timeout"].read == 45.0
+        assert kwargs["timeout"].connect == 4.0
+        return real_client(transport=httpx.MockTransport(handle), **kwargs)
+
+    monkeypatch.setattr("app.ai.httpx.AsyncClient", client)
+    with caplog.at_level(logging.WARNING, logger="app.ai"):
+        result = asyncio.run(enrich_plan(request, build_plan(request)))
+    assert result.source == "local"
+    assert "model=gemini-3.5-flash-lite" in caplog.text
+    assert "elapsed_s=" in caplog.text
+    if failure == "http-status":
+        assert "type=HTTPStatusError status=429" in caplog.text
+    else:
+        assert "type=ReadTimeout status=None" in caplog.text
+    assert key not in caplog.text and private_text not in caplog.text
+    assert "Traceback" not in caplog.text

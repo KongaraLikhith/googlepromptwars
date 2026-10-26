@@ -2,8 +2,10 @@
 
 import asyncio
 import json
+import logging
 import os
 import re
+from time import monotonic
 
 import httpx
 from pydantic import ValidationError
@@ -11,6 +13,7 @@ from pydantic import ValidationError
 from .schemas import AIEnrichment, PlanRequest, PlanResponse
 
 _MODEL_SLOTS = asyncio.Semaphore(4)
+_LOGGER = logging.getLogger(__name__)
 
 
 async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
@@ -27,6 +30,7 @@ async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
         plan.source_note = "AI is busy. Showing the complete local plan and curated ideas; you can try again later."
         return plan
 
+    started = monotonic()
     try:
         details = request.model_dump(mode="json")
         prompt = (
@@ -49,7 +53,7 @@ async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
             body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
         elif model.startswith("gemini-2.5"):
             body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
-        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=4.0), follow_redirects=False) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(45.0, connect=4.0), follow_redirects=False) as client:
             response = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                 headers={"x-goog-api-key": key, "Content-Type": "application/json"}, json=body,
@@ -65,7 +69,12 @@ async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
         plan.tips = plan.tips[:3] + result.tips
         plan.source = "gemini"
         plan.source_note = "Ideas personalized with Gemini. Budget allocations, dates, and checklists remain deterministic planning estimates."
-    except (httpx.HTTPError, ValidationError, ValueError, KeyError, IndexError, TypeError):
+    except (httpx.HTTPError, ValidationError, ValueError, KeyError, IndexError, TypeError) as error:
+        status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
+        _LOGGER.warning(
+            "Gemini enrichment failed: type=%s status=%s model=%s elapsed_s=%.3f",
+            type(error).__name__, status, model, monotonic() - started,
+        )
         plan.source_note = "Gemini is unavailable right now. Showing the complete local plan and curated ideas."
     finally:
         _MODEL_SLOTS.release()

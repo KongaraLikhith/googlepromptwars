@@ -291,7 +291,7 @@ async function generatePlan(event, persist = true) {
   setLoading(true);
   inform('A little thought for every detail. Your plan is coming together.');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
   try {
     const response = await fetch('/api/plan', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
