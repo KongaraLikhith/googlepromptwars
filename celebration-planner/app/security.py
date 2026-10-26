@@ -13,6 +13,34 @@ MAX_BODY_BYTES = 8192
 BODY_TIMEOUT_SECONDS = 10.0
 
 
+def _declared_length(scope: Scope) -> int:
+    """Reject ambiguous framing without reading a body or echoing its values."""
+    lengths = [value for name, value in scope["headers"] if name == b"content-length"]
+    if len(lengths) > 1 or (lengths and not lengths[0].isdigit()):
+        raise ValueError("Invalid content length")
+    return int(lengths[0]) if lengths else 0
+
+
+class _BodyTooLarge(Exception):
+    """A streamed body exceeded the same limit as a declared body."""
+
+
+async def _read_body(receive: Receive) -> bytes | None:
+    """Read once with bounded memory/time; None means the client disconnected."""
+    body = bytearray()
+    async with asyncio.timeout(BODY_TIMEOUT_SECONDS):
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return None
+            chunk = message.get("body", b"")
+            if len(body) + len(chunk) > MAX_BODY_BYTES:
+                raise _BodyTooLarge
+            body.extend(chunk)
+            if not message.get("more_body", False):
+                return bytes(body)
+
+
 class SlidingWindowRateLimiter:
     """Best-effort per-worker limit; never trust a client-supplied proxy header.
 
@@ -40,9 +68,13 @@ class SlidingWindowRateLimiter:
         """Record an allowed request, or return seconds until a slot is free."""
         now = self.clock()
         cutoff = now - self.window_seconds
-        expired = [key for key, hits in self._clients.items() if hits[-1] <= cutoff]
-        for key in expired:
-            del self._clients[key]
+        # Ordered by the most recent accepted hit: discard only expired heads.
+        # Each client is removed once, avoiding a full scan on every request.
+        while self._clients:
+            first = next(iter(self._clients.values()))
+            if first[-1] > cutoff:
+                break
+            self._clients.popitem(last=False)
         hits = self._clients.get(client)
         if hits is None:
             if len(self._clients) >= self.max_clients:
@@ -50,10 +82,10 @@ class SlidingWindowRateLimiter:
             hits = self._clients[client] = deque()
         while hits and hits[0] <= cutoff:
             hits.popleft()
-        self._clients.move_to_end(client)
         if len(hits) >= self.limit:
             return max(1, math.ceil(hits[0] + self.window_seconds - now))
         hits.append(now)
+        self._clients.move_to_end(client)
         return None
 
 
@@ -67,11 +99,8 @@ class RequestLimitMiddleware:
         if scope["type"] != "http" or scope["method"] not in {"POST", "PUT", "PATCH"}:
             await self.app(scope, receive, send)
             return
-        lengths = [value for name, value in scope["headers"] if name == b"content-length"]
         try:
-            if len(lengths) > 1 or (lengths and not lengths[0].isdigit()):
-                raise ValueError
-            size = int(lengths[0]) if lengths else 0
+            size = _declared_length(scope)
         except ValueError:
             await JSONResponse({"detail": "Invalid content length."}, status_code=400)(
                 scope, receive, send
@@ -82,26 +111,19 @@ class RequestLimitMiddleware:
                 scope, receive, send
             )
             return
-        body = bytearray()
         try:
-            async with asyncio.timeout(BODY_TIMEOUT_SECONDS):
-                while True:
-                    message = await receive()
-                    if message["type"] == "http.disconnect":
-                        return
-                    chunk = message.get("body", b"")
-                    if len(body) + len(chunk) > MAX_BODY_BYTES:
-                        await JSONResponse({"detail": "Request is too large."}, status_code=413)(
-                            scope, receive, send
-                        )
-                        return
-                    body.extend(chunk)
-                    if not message.get("more_body", False):
-                        break
+            body = await _read_body(receive)
+        except _BodyTooLarge:
+            await JSONResponse({"detail": "Request is too large."}, status_code=413)(
+                scope, receive, send
+            )
+            return
         except TimeoutError:
             await JSONResponse({"detail": "Request body timed out."}, status_code=408)(
                 scope, receive, send
             )
+            return
+        if body is None:
             return
         delivered = False
 
@@ -109,7 +131,7 @@ class RequestLimitMiddleware:
             nonlocal delivered
             if not delivered:
                 delivered = True
-                return {"type": "http.request", "body": bytes(body), "more_body": False}
+                return {"type": "http.request", "body": body, "more_body": False}
             return await receive()
 
         await self.app(scope, replay, send)

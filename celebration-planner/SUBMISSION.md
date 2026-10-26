@@ -16,7 +16,7 @@ Keep one published branch (`master`) in the repository. This existing repository
 
 ## Suggested deployed-version description
 
-Improved Gatherly for Challenge 5 with modular frontend helpers and validated browser storage, clearer accessible form guidance, request throttling, stronger security headers, and bounded streamed AI responses with a total deadline. Added reproducible frontend and browser/accessibility tests alongside planner, API, security, and AI regression tests. Separated development tools from production dependencies and documented the event-specific decision rules, assumptions, and limitations. The app retains editable exact-cent budgets with contingency, date-aware timelines, vendor checklists, Gemini ideas with honest fallback, local save, JSON export, and print.
+Optimized Gatherly's first screen and reset to load a local sample without spending AI tokens. Added bounded five-minute reuse of validated Gemini ideas, shared work for identical concurrent requests, and pooled provider connections. Refactored planning into small typed functions with immutable event templates, and separated frontend rendering, request handling, and state. Reused browser locale formatters and improved rate-limit expiry. Retained exact-cent budgets, adaptive timelines, vendor checklists, accessible keyboard flows, local save/export/print, and honest AI fallback. Expanded automated tests for cache expiry, concurrency, cancellation, isolation, and zero-AI startup/reset; documented reproducible performance checks.
 
 ## Suggested GenAI description
 

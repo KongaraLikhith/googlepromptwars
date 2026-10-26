@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 Priority = Literal["food", "decor", "entertainment", "photography", "venue", "accessibility"]
 
@@ -21,6 +21,11 @@ class PlanRequest(BaseModel):
     style: str = Field(default="A thoughtful celebration", max_length=80)
     priorities: list[Priority] = Field(default_factory=list, max_length=3)
     preferences: str = Field(default="", max_length=500)
+
+    @field_serializer("budget", when_used="json")
+    def budget_number(self, value: Decimal) -> float:
+        """Keep Decimal arithmetic internally and the browser's brief numeric."""
+        return float(value)
 
     @field_validator("event_date")
     @classmethod
@@ -98,3 +103,8 @@ class PlanResponse(BaseModel):
     source_note: str
     per_guest: float
     days_until: int
+
+
+class SampleResponse(BaseModel):
+    brief: PlanRequest
+    plan: PlanResponse

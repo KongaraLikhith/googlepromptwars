@@ -2,13 +2,20 @@ import asyncio
 import json
 import logging
 from datetime import date, timedelta
+from decimal import Decimal
 
 import httpx
 import pytest
 
 from app.ai import enrich_plan
+from app.enrichment_cache import EnrichmentCache
 from app.planner import build_plan
 from app.schemas import PlanRequest
+
+
+@pytest.fixture(autouse=True)
+def isolated_enrichment_cache(monkeypatch):
+    monkeypatch.setattr("app.ai._ENRICHMENTS", EnrichmentCache())
 
 
 def sample():
@@ -33,17 +40,44 @@ def test_absent_key_never_constructs_network_client(monkeypatch):
     assert plan.source == "local"
 
 
-def test_busy_model_slots_do_not_create_a_network_client(monkeypatch):
+def test_four_distinct_requests_are_bounded_and_busy_request_does_not_open_client(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-a-real-credential")
-    monkeypatch.setattr("app.ai._MODEL_SLOTS", asyncio.Semaphore(0))
+    opened = 0
+    started = asyncio.Event()
+    release = asyncio.Event()
+    valid = {
+        "ideas": [{"title": "A shared activity", "description": "Offer seated choices."}] * 3,
+        "tips": ["Confirm details.", "Keep labels clear.", "Use reusable supplies."],
+    }
 
-    def forbidden(*args, **kwargs):
-        raise AssertionError("Busy requests must return the complete local plan immediately")
+    async def handle(_request):
+        nonlocal opened
+        opened += 1
+        if opened == 4:
+            started.set()
+        await release.wait()
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(valid)}]}}]}
+        )
 
-    monkeypatch.setattr("app.ai.httpx.AsyncClient", forbidden)
-    plan = asyncio.run(enrich_plan(sample(), build_plan(sample())))
-    assert plan.source == "local" and "busy" in plan.source_note
-    assert len(plan.timeline) == 8 and len(plan.vendors) == 7
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handle), **kwargs),
+    )
+
+    async def exercise():
+        requests = [sample().model_copy(update={"guest_count": count}) for count in range(1, 6)]
+        active = [asyncio.create_task(enrich_plan(item, build_plan(item))) for item in requests[:4]]
+        await started.wait()
+        plan = await enrich_plan(requests[4], build_plan(requests[4]))
+        assert plan.source == "local" and "busy" in plan.source_note
+        assert len(plan.timeline) == 8 and len(plan.vendors) == 7
+        assert opened == 4
+        release.set()
+        assert all(plan.source == "gemini" for plan in await asyncio.gather(*active))
+
+    asyncio.run(exercise())
 
 
 @pytest.mark.parametrize(
@@ -277,3 +311,83 @@ def test_total_deadline_cancels_dribbling_stream_and_releases_model_capacity(mon
 
     asyncio.run(exercise())
     assert len(streams) == 5 and all(stream.closed for stream in streams)
+
+
+def test_success_cache_reuses_only_the_same_context_model_and_credential(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "first-test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    calls = 0
+    valid = {
+        "ideas": [{"title": "An original idea", "description": "Offer seated activities."}] * 3,
+        "tips": ["Confirm labels.", "Use reusable supplies.", "Offer choices."],
+    }
+
+    def handle(_request):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(valid)}]}}]}
+        )
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        "app.ai.httpx.AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(handle), **kwargs),
+    )
+
+    async def exercise():
+        request = sample().model_copy(update={"priorities": ["food", "decor"]})
+        first = await enrich_plan(request, build_plan(request))
+        first.ideas[0].title = "An edit must not mutate cached ideas"
+        first.budget_items[0].amount = 123
+        equivalent = request.model_copy(
+            update={"budget": Decimal("10000.00"), "priorities": ["decor", "food"]}
+        )
+        second = await enrich_plan(equivalent, build_plan(equivalent))
+        assert calls == 1
+        assert second.source == "gemini" and second.ideas[0].title == "An original idea"
+        assert second.budget_items[0].amount != 123
+        changed = request.model_copy(update={"preferences": "A different planning preference"})
+        await enrich_plan(changed, build_plan(changed))
+        assert calls == 2
+        monkeypatch.setenv("GEMINI_MODEL", "another-supported-model")
+        await enrich_plan(request, build_plan(request))
+        assert calls == 3
+        monkeypatch.setenv("GEMINI_API_KEY", "rotated-test-key")
+        await enrich_plan(request, build_plan(request))
+        assert calls == 4
+
+    asyncio.run(exercise())
+
+
+def test_supplied_connection_pool_is_reused_and_not_closed_by_enrichment(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-a-real-credential")
+    calls = 0
+    valid = {
+        "ideas": [{"title": "A personalized idea", "description": "Offer a seated option."}] * 3,
+        "tips": ["Confirm labels.", "Offer choices.", "Keep signs clear."],
+    }
+
+    def handle(_request):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(valid)}]}}]}
+        )
+
+    real_client = httpx.AsyncClient
+
+    def forbidden(**_kwargs):
+        raise AssertionError("The application pool must be reused on distinct cache misses")
+
+    monkeypatch.setattr("app.ai.httpx.AsyncClient", forbidden)
+
+    async def exercise():
+        async with real_client(transport=httpx.MockTransport(handle)) as client:
+            for count in [20, 30]:
+                request = sample().model_copy(update={"guest_count": count})
+                result = await enrich_plan(request, build_plan(request), client=client)
+                assert result.source == "gemini" and not client.is_closed
+        assert client.is_closed and calls == 2
+
+    asyncio.run(exercise())

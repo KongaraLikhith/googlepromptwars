@@ -12,3 +12,4 @@ test-results/
 playwright-report/
 .ruff_cache/
 requirements-dev.*
+scripts/

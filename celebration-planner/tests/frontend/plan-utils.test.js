@@ -64,3 +64,22 @@ test('rate-limit feedback rounds Retry-After up and handles absent or invalid va
   assert.match(retryMessage('1'), /1 minute/);
   for (const value of [null, '', 'invalid', '-5', 'Infinity']) assert.match(retryMessage(value), /in a moment/);
 });
+
+test('repeated rendering reuses locale formatters without changing displayed values', async t => {
+  const utils = await import('../../app/static/plan-utils.js?formatter-reuse-test');
+  const NumberFormat = Intl.NumberFormat;
+  const DateTimeFormat = Intl.DateTimeFormat;
+  const money = t.mock.method(Intl, 'NumberFormat', function (...args) { return new NumberFormat(...args); });
+  const dates = t.mock.method(Intl, 'DateTimeFormat', function (...args) { return new DateTimeFormat(...args); });
+  for (let index = 0; index < 100; index += 1) {
+    assert.equal(utils.formatMoney(1234, 'INR'), new NumberFormat('en-IN', {
+      style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2,
+    }).format(1234));
+    assert.equal(utils.formatMoney(1234.25, 'INR'), new NumberFormat('en-IN', {
+      style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+    }).format(1234.25));
+    assert.equal(utils.dateLabel('2027-01-01', { year: 'numeric' }), '2027');
+  }
+  assert.equal(money.mock.calls.length, 2);
+  assert.equal(dates.mock.calls.length, 1);
+});

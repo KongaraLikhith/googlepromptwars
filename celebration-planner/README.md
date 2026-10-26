@@ -6,6 +6,8 @@ Challenge 5: a GenAI-powered assistant for weddings, birthdays, and community ev
 
 Gatherly works without an account or API key. Its local mode is clearly labelled. Configure Gemini to personalize ideas while the inspectable planning engine continues to control the numbers and dates.
 
+The first screen loads a local sample without calling Gemini. Customize the brief and choose **Create my celebration plan** to request AI ideas. Resetting also loads a local sample; opening or exploring the page does not spend AI tokens.
+
 ## Run locally
 
 Requires Python 3.12 or newer. From this directory:
@@ -49,10 +51,11 @@ Gemini writes ideas and tips. It does not set budget totals, choose dates, conta
 ```text
 Browser: semantic HTML + CSS + JavaScript
   ├─ editable planning workspace and browser-local checklist
+  ├─ GET /api/sample → deterministic first screen, no AI call
   └─ POST /api/plan
        ├─ FastAPI validation
        ├─ deterministic budget / timeline / vendor engine
-       └─ optional Gemini REST request for ideas and tips
+       └─ bounded enrichment cache → optional pooled Gemini request
 ```
 
 The intended user is a host planning a wedding or birthday, or a volunteer organizing a community gathering. They need a usable first plan before they have vendor quotes, rather than a chatbot transcript they must turn into a checklist themselves.
@@ -74,14 +77,28 @@ Currency is a unit selected by the user, not an exchange-rate conversion. Budget
 ### Code map
 
 - `app/schemas.py`: bounded input and AI-output contracts.
-- `app/planner.py`: deterministic budget, timeline, vendors, and local suggestions.
-- `app/ai.py`: optional Gemini enrichment with deadlines and safe fallback.
+- `app/planner.py`: small typed functions for budgets, timelines, vendors, ideas, and context decisions.
+- `app/planning_data.py`: immutable event templates and planning assumptions.
+- `app/ai.py`: Gemini request validation, deadlines, safe fallback, and credential-scoped context keys.
+- `app/enrichment_cache.py`: bounded success reuse and identical-request coalescing.
 - `app/security.py`: typed ASGI body limits, response headers, and bounded request throttling.
 - `app/main.py`: API routes and static-file serving.
-- `app/static/`: semantic interface, presentation, rendering, pure plan helpers, and validated browser storage.
+- `app/static/app.js`: controller and interaction state.
+- `app/static/plan-view.js`, `plan-api.js`, `plan-utils.js`, `plan-storage.js`: rendering, requests, pure helpers/locale formatters, and validated browser storage.
 - `tests/`: planner/API/AI/security tests, frontend unit tests, and browser/accessibility checks.
 
-The server does not persist event plans. Generated plans and edits are saved automatically in the current browser, with visible save status; clearing or exporting a plan is under the user's control. Gemini receives event context only when server-side AI is configured; its provider policies still apply. Logs record safe failure metadata, excluding keys, prompts, preferences, and model output.
+The server has no database or durable event-plan storage. A sample remains in memory until the user edits it or explicitly generates a plan; those edits and generated plans save automatically in the current browser, with visible status. Clearing or exporting a plan is under the user's control. Successful AI ideas can be reused briefly in worker memory as described below. Gemini receives event context only on explicit plan generation when server-side AI is configured; its provider policies still apply. Logs record safe failure metadata, excluding keys, prompts, preferences, and model output.
+
+### Efficiency and resource bounds
+
+- Startup and reset use a deterministic sample endpoint: zero Gemini requests.
+- Successful ideas and tips have a five-minute reuse window in a cache limited to 128 entries per worker. Keys are HMAC digests scoped to the model, server credential, and normalized event context; raw briefs and API keys are not stored as cache keys. Expired entries are removed on the next cache access; worker shutdown also releases memory. The cache stores validated AI enrichment only, never complete plans, and returns independent copies.
+- Concurrent identical briefs share one provider task. Up to four distinct calls run per worker; additional distinct calls use the labelled local fallback immediately. Failures are not cached or automatically retried. Cancelling one waiter does not cancel work shared by another.
+- The application lifespan reuses an HTTP connection pool and closes it on shutdown. Request deadlines and response-size limits remain in force.
+- Immutable templates are created once. Planning cost does not grow with guest count. Rate-limiter expiry removes ordered expired entries once instead of scanning every tracked client per request.
+- Browser rendering reuses a bounded set of locale formatters and fixed DOM references. There are no frontend runtime packages, external fonts, or media requests.
+
+Cache and throttle state are local to a worker and are lost on cold starts; multiple serverless instances do not share them. See [PERFORMANCE.md](PERFORMANCE.md) for reproducible checks and measured observations.
 
 ### Security boundaries
 
@@ -95,8 +112,8 @@ For development, install the separate hashed development lockfile in the virtual
 
 ```bash
 python -m pip install --require-hashes -r requirements-dev.lock
-ruff check app tests
-ruff format --check app tests
+ruff check app tests scripts
+ruff format --check app tests scripts
 python -m pytest -q
 ```
 
@@ -123,7 +140,7 @@ npm run test:browser
 
 `BASE_URL` overrides the server URL; `CHROMIUM_PATH` selects an existing Chromium executable. The suite checks all event types, exact-cent totals, edits/export, checklist persistence, keyboard tabs, failure recovery, print, six viewport widths, and axe WCAG A/AA scans. Automated accessibility checks cover common issues; they do not replace assistive-technology user testing.
 
-Python tests cover arithmetic, priorities, scheduling, validation, body limits, throttling, security headers, and mocked Gemini success, timeout, malformed output, size limits, and fallback. Frontend tests cover money/date helpers and malformed or unavailable browser storage. These automated suites need no paid AI key; successful Gemini integration must also be checked against the live deployment. `requirements.lock` pins runtime artifacts with hashes; `requirements-dev.lock` adds test/lint tools, and `package-lock.json` pins browser-test tools. No Node packages are shipped to the browser.
+Python tests cover arithmetic, all supported priority combinations, template isolation, scheduling, validation, body limits, throttling, security headers, connection-pool lifecycle, and mocked Gemini success, timeout, malformed output, size limits, and fallback. Cache tests check expiry, capacity, concurrent reuse, cancellation, mutation isolation, and credential/context separation. Frontend tests cover request deadlines, sample validation, money/date helpers, formatter reuse, and malformed or unavailable browser storage. Ruff also limits function complexity to ten. These automated suites need no paid AI key; successful Gemini integration must also be checked against the live deployment. `requirements.lock` pins runtime artifacts with hashes; `requirements-dev.lock` adds test/lint tools, and `package-lock.json` pins browser-test tools. No Node packages are shipped to the browser.
 
 ## Vercel deployment
 
@@ -159,4 +176,4 @@ Container deployment requires your cloud account and may incur provider charges.
 
 ## Scope and limitations
 
-Currency selection changes the unit and display; it does not convert prices or provide market quotes. Local planning uses documented category shares rather than location-specific vendor pricing. The assistant does not manage invitations, accounts, payments, or live vendor availability. No event information is persisted on the server. Browser storage belongs to the current browser and device.
+Currency selection changes the unit and display; it does not convert prices or provide market quotes. Local planning uses documented category shares rather than location-specific vendor pricing. The assistant does not manage invitations, accounts, payments, or live vendor availability. There is no durable server-side plan storage; the bounded AI enrichment cache temporarily holds generated ideas in worker memory. Browser storage belongs to the current browser and device.

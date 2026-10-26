@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from itertools import combinations
 
 import pytest
 
@@ -77,3 +78,35 @@ def test_local_plan_reflects_event_style_location_and_guest_count():
     assert "Delhi" in plan.summary and "12 guests" in plan.summary
     assert "12 guests" in next(item.note for item in plan.vendors if item.id == "caterer")
     assert "cozy book club" in plan.ideas[0].description
+
+
+@pytest.mark.parametrize("event_type", ["wedding", "birthday", "community"])
+def test_every_supported_priority_combination_preserves_budget(event_type):
+    priorities = ("food", "decor", "entertainment", "photography", "venue", "accessibility")
+    for count in range(4):
+        for chosen in combinations(priorities, count):
+            plan = build_plan(request(event_type=event_type, budget="100.01", priorities=chosen))
+            assert sum(Decimal(str(item.amount)) for item in plan.budget_items) == Decimal("100.01")
+            assert sum(item.percent for item in plan.budget_items) == 100
+            assert plan.budget_items[-1].percent == 10
+            assert all(item.amount >= 0 for item in plan.budget_items)
+
+
+def test_editing_a_plan_cannot_change_another_plan_or_shared_templates():
+    brief = request()
+    original = build_plan(brief).model_dump(mode="json")
+    edited = build_plan(brief)
+    edited.budget_items[0].amount = 0
+    edited.timeline[0].note = "Changed"
+    edited.vendors[0].title = "Changed"
+    edited.ideas[0].description = "Changed"
+    edited.tips.clear()
+    assert build_plan(brief).model_dump(mode="json") == original
+
+
+def test_user_style_with_template_markers_is_kept_as_literal_text():
+    plan = build_plan(request(style="A {style} and {guests} gathering"))
+    assert "a {style} and {guests} gathering" in plan.ideas[0].description
+    assert "a {style} and {guests} gathering" in next(
+        item.note for item in plan.vendors if item.id == "styling"
+    )

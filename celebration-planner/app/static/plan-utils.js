@@ -2,6 +2,18 @@
 export const EVENT_NAMES = Object.freeze({ wedding: 'Wedding', birthday: 'Birthday', community: 'Community' });
 export const CURRENCY_SYMBOLS = Object.freeze({ INR: '₹', USD: '$', EUR: '€', GBP: '£' });
 
+// Rendering a plan formats the same currencies and three date shapes repeatedly.
+// Bound both caches so even unexpected callers cannot retain unlimited formats.
+const moneyFormats = new Map();
+const dateFormats = new Map();
+function cachedFormat(cache, key, create) {
+  if (!cache.has(key)) {
+    if (cache.size >= 8) cache.delete(cache.keys().next().value);
+    cache.set(key, create());
+  }
+  return cache.get(key);
+}
+
 export function dateKey(value) {
   const year = value.getFullYear();
   const month = String(value.getMonth() + 1).padStart(2, '0');
@@ -16,7 +28,8 @@ export function isDateKey(value) {
 }
 
 export function dateLabel(value, options = { day: 'numeric', month: 'short', year: 'numeric' }) {
-  return new Intl.DateTimeFormat(undefined, options).format(new Date(`${value}T12:00:00`));
+  const formatter = cachedFormat(dateFormats, JSON.stringify(options), () => new Intl.DateTimeFormat(undefined, options));
+  return formatter.format(new Date(`${value}T12:00:00`));
 }
 
 export function daysUntil(value, today = new Date()) {
@@ -24,10 +37,12 @@ export function daysUntil(value, today = new Date()) {
 }
 
 export function formatMoney(value, currency) {
-  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : undefined, {
-    style: 'currency', currency, minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
+  const minimumFractionDigits = Number.isInteger(Number(value)) ? 0 : 2;
+  const formatter = cachedFormat(moneyFormats, `${currency}:${minimumFractionDigits}`, () =>
+    new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : undefined, {
+      style: 'currency', currency, minimumFractionDigits, maximumFractionDigits: 2,
+    }));
+  return formatter.format(Number(value));
 }
 
 export function budgetTotals(items, budget) {

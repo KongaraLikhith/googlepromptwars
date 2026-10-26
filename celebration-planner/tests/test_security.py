@@ -32,6 +32,19 @@ def test_many_clients_cannot_grow_rate_limiter_memory_without_bound():
     assert len(limiter._clients) == 1
 
 
+def test_rejected_hits_do_not_keep_expired_clients_ahead_of_active_ones():
+    now = 0.0
+    limiter = SlidingWindowRateLimiter(limit=1, window_seconds=10, clock=lambda: now)
+    assert limiter.retry_after("older") is None
+    now = 5.0
+    assert limiter.retry_after("active") is None
+    now = 8.0
+    assert limiter.retry_after("older") == 2
+    now = 10.0
+    assert limiter.retry_after("new") is None
+    assert set(limiter._clients) == {"active", "new"}
+
+
 def run_body_request(headers, chunks, *, delay=0):
     received = []
     responses = []

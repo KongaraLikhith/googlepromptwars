@@ -124,3 +124,52 @@ def test_invalid_inputs_do_not_consume_plan_quota():
     for _ in range(13):
         assert client.post("/api/plan", json=payload(guest_count=0)).status_code == 422
     assert client.post("/api/plan", json=payload()).status_code == 200
+
+
+def test_sample_never_calls_ai_even_when_configured_or_consumes_plan_quota(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-a-real-credential")
+
+    async def forbidden(*args, **kwargs):
+        raise AssertionError("The sample must never call Gemini")
+
+    monkeypatch.setattr("app.main.enrich_plan", forbidden)
+    for _ in range(13):
+        response = client.get("/api/sample")
+        assert response.status_code == 200
+    sample = response.json()
+    assert sample["brief"]["budget"] == 50000
+    assert isinstance(sample["brief"]["budget"], (int, float))
+    assert sample["brief"]["event_date"] == (date.today() + timedelta(days=90)).isoformat()
+    assert sample["plan"]["source"] == "local"
+    assert "Sample" in sample["plan"]["source_note"]
+    assert sum(round(item["amount"] * 100) for item in sample["plan"]["budget_items"]) == 5000000
+    assert app.state.plan_limiter._clients == {}
+
+
+def test_provider_client_is_reused_and_closed_with_application_lifecycle(monkeypatch):
+    import httpx
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-a-real-credential")
+    instances = []
+    passed_clients = []
+    real_client = httpx.AsyncClient
+
+    def construct(**kwargs):
+        provider_client = real_client(**kwargs)
+        instances.append(provider_client)
+        return provider_client
+
+    async def enrich(_request, plan, *, client=None):
+        passed_clients.append(client)
+        return plan
+
+    monkeypatch.setattr("app.main.httpx.AsyncClient", construct)
+    monkeypatch.setattr("app.main.enrich_plan", enrich)
+    with TestClient(app) as running_client:
+        assert running_client.post("/api/plan", json=payload()).status_code == 200
+        assert running_client.post("/api/plan", json=payload(style="Colorful")).status_code == 200
+        assert len(instances) == 1
+        assert passed_clients == [instances[0], instances[0]]
+        assert not instances[0].is_closed
+    assert instances[0].is_closed
+    assert app.state.ai_client is None
