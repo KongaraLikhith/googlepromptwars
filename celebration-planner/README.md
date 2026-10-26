@@ -2,6 +2,8 @@
 
 Challenge 5: a GenAI-powered assistant for weddings, birthdays, and community events. Turn a few practical details into a budget, preparation timeline, vendor checklist, and personal celebration ideas.
 
+**Live app:** [gatherly-celebration-planner-c5.vercel.app](https://gatherly-celebration-planner-c5.vercel.app)
+
 Gatherly works without an account or API key. Its local mode is clearly labelled. Configure Gemini to personalize ideas while the inspectable planning engine continues to control the numbers and dates.
 
 ## Run locally

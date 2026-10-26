@@ -6,6 +6,8 @@
 
 Repository link: `https://github.com/KongaraLikhith/googlepromptwars`
 
+Deployed project: `https://gatherly-celebration-planner-c5.vercel.app`
+
 Challenge 5 source directory: [`celebration-planner`](./).
 
 Before submitting, push this project to the public repository and verify the link works in a signed-out browser. Keep the source repository below 10 MB. Environment virtual environments and package caches live outside the checkout and must not be committed.
