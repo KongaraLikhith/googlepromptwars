@@ -8,3 +8,7 @@ __pycache__
 .venv
 venv
 tests
+node_modules
+.ruff_cache
+test-results
+playwright-report

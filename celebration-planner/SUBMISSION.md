@@ -12,9 +12,11 @@ Challenge 5 source directory: [`celebration-planner`](./).
 
 Before submitting, push this project to the public repository and verify the link works in a signed-out browser. Keep the source repository below 10 MB. Environment virtual environments and package caches live outside the checkout and must not be committed.
 
+Keep one published branch (`master`) in the repository. This existing repository contains earlier challenges in separate directories; Challenge 5 code and documentation are in `celebration-planner/`.
+
 ## Suggested deployed-version description
 
-Gatherly adds a complete planning workspace for weddings, birthdays, and community events. Users enter their date, budget, guest count, location, style, and priorities to create an editable category budget with contingency, a date-aware preparation timeline, and a vendor checklist. Personalized ideas use Gemini when configured, with a clearly labelled local fallback. Plans and checklist progress can be saved in the browser, exported as JSON, or printed. The responsive interface supports keyboard access and accessible status messages. Automated tests cover planning arithmetic, validation, scheduling, and AI fallback behavior.
+Improved Gatherly for Challenge 5 with modular frontend helpers and validated browser storage, clearer accessible form guidance, request throttling, stronger security headers, and bounded streamed AI responses with a total deadline. Added reproducible frontend and browser/accessibility tests alongside planner, API, security, and AI regression tests. Separated development tools from production dependencies and documented the event-specific decision rules, assumptions, and limitations. The app retains editable exact-cent budgets with contingency, date-aware timelines, vendor checklists, Gemini ideas with honest fallback, local save, JSON export, and print.
 
 ## Suggested GenAI description
 
@@ -40,3 +42,7 @@ Google Gemini personalizes celebration ideas and practical planning tips from th
 - Publish your own LinkedIn post and enter its actual HTTPS URL.
 
 The platform permits only three submissions. Validate all links and ensure the deployed app matches the repository before using an attempt.
+
+Demo video: `https://youtu.be/fgtzl3VfrTo`
+
+LinkedIn post: `https://lnkd.in/p/e5XktsDg`

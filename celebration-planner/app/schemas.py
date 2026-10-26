@@ -77,7 +77,9 @@ class Idea(BaseModel):
 class AIEnrichment(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     ideas: list[Idea] = Field(min_length=3, max_length=4)
-    tips: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(min_length=3, max_length=5)
+    tips: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
+        min_length=3, max_length=5
+    )
 
 
 class PlanResponse(BaseModel):

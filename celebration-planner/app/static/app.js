@@ -1,14 +1,14 @@
-'use strict';
+import { EVENT_NAMES as eventNames, CURRENCY_SYMBOLS as currencySymbols,
+  dateKey, dateLabel, daysUntil, formatMoney, budgetTotals, validPlan, retryMessage } from './plan-utils.js';
+import { createPlanStore } from './plan-storage.js';
 
-const STORAGE_KEY = 'gatherly.plan.v1';
+const planStore = createPlanStore();
 const form = document.querySelector('#event-form');
 const workspace = document.querySelector('#plan-workspace');
 const generateButton = document.querySelector('#generate-button');
 const generateLabel = document.querySelector('#generate-label');
 const message = document.querySelector('#form-message');
 const announcement = document.querySelector('#plan-announcement');
-const eventNames = { wedding: 'Wedding', birthday: 'Birthday', community: 'Community' };
-const currencySymbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 let currentPlan = null;
 let currentBrief = null;
 let completed = new Set();
@@ -21,22 +21,8 @@ function element(tag, className, text) {
   return node;
 }
 
-function dateKey(value) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function dateLabel(value, options = { day: 'numeric', month: 'short', year: 'numeric' }) {
-  return new Intl.DateTimeFormat(undefined, options).format(new Date(`${value}T12:00:00`));
-}
-
 function money(value, currency = currentPlan?.currency || form.elements.currency.value) {
-  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : undefined, {
-    style: 'currency', currency, minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value));
+  return formatMoney(value, currency);
 }
 
 function inform(text, error = false) {
@@ -85,58 +71,35 @@ function setDefaults() {
 
 function savePlan() {
   if (!currentPlan || !currentBrief) return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 1, brief: currentBrief, plan: currentPlan, completed: [...completed],
-    }));
-    document.querySelector('#save-status').textContent = '◈  Saved only in this browser';
-  } catch {
-    document.querySelector('#save-status').textContent = '◈  Browser storage unavailable — download to keep your plan';
-  }
-}
-
-function validPlan(plan) {
-  return plan && typeof plan === 'object'
-    && Object.hasOwn(eventNames, plan.event_type)
-    && Object.hasOwn(currencySymbols, plan.currency)
-    && /^\d{4}-\d{2}-\d{2}$/.test(plan.event_date)
-    && Number.isFinite(Number(plan.budget)) && Number(plan.budget) >= 100
-    && Number.isInteger(plan.guest_count) && plan.guest_count > 0
-    && ['budget_items', 'timeline', 'vendors', 'ideas', 'tips'].every(key => Array.isArray(plan[key]))
-    && plan.budget_items.length > 0 && plan.budget_items.length <= 20
-    && plan.budget_items.every(item => item && typeof item.category === 'string' && Number.isFinite(Number(item.amount)) && Number(item.amount) >= 0)
-    && plan.timeline.every(item => item && /^\d{4}-\d{2}-\d{2}$/.test(item.date))
-    && plan.vendors.every(item => item && typeof item.id === 'string');
+  const saved = planStore.save({ brief: currentBrief, plan: currentPlan, completed });
+  document.querySelector('#save-status').textContent = saved
+    ? '◈  Saved only in this browser'
+    : '◈  Browser storage unavailable — download to keep your plan';
 }
 
 function restoreSaved() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (saved?.version !== 1 || !validPlan(saved.plan)) return false;
-    restoreBrief(saved.brief);
-    currentBrief = saved.brief;
-    currentPlan = saved.plan;
-    completed = new Set(Array.isArray(saved.completed) ? saved.completed.filter(id => typeof id === 'string') : []);
-    renderPlan();
-    if (currentPlan.event_date < form.elements.event_date.min) {
-      inform('Your saved celebration date has passed. Choose a new date to refresh the plan.');
-    } else {
-      inform('Welcome back. Your plan and checklist are right where you left them.');
-    }
-    return true;
-  } catch {
-    return false;
+  const saved = planStore.load();
+  if (!saved) return false;
+  restoreBrief(saved.brief);
+  currentBrief = saved.brief;
+  currentPlan = saved.plan;
+  completed = new Set(saved.completed);
+  renderPlan();
+  if (currentPlan.event_date < form.elements.event_date.min) {
+    inform('Your saved celebration date has passed. Choose a new date to refresh the plan.');
+  } else {
+    inform('Welcome back. Your plan and checklist are right where you left them.');
   }
+  return true;
 }
 
 function updateBudgetTotals() {
-  const cents = currentPlan.budget_items.reduce((sum, item) => sum + Math.round(Number(item.amount) * 100), 0);
-  const difference = Math.round(Number(currentPlan.budget) * 100) - cents;
-  document.querySelector('#allocated-total').textContent = money(cents / 100);
+  const { allocated, difference } = budgetTotals(currentPlan.budget_items, currentPlan.budget);
+  document.querySelector('#allocated-total').textContent = money(allocated);
   const balance = document.querySelector('#balance-message');
   balance.classList.toggle('over', difference < 0);
   balance.textContent = difference === 0 ? '✓ Every bit has a purpose' : difference > 0
-    ? `${money(difference / 100)} left to allocate` : `${money(Math.abs(difference) / 100)} over your budget`;
+    ? `${money(difference)} left to allocate` : `${money(Math.abs(difference))} over your budget`;
 }
 
 function renderBudget() {
@@ -257,7 +220,7 @@ function renderPlan() {
   document.querySelector('#plan-summary').textContent = plan.summary;
   const badge = document.querySelector('#source-badge');
   badge.replaceChildren(element('span', 'status-dot'), document.createTextNode(plan.source === 'gemini' ? 'Gemini ideas' : 'Local planning mode'));
-  const days = Math.round((new Date(`${plan.event_date}T12:00:00`) - new Date(`${dateKey(new Date())}T12:00:00`)) / 86400000);
+  const days = daysUntil(plan.event_date);
   document.querySelector('#days-metric').textContent = days < 0 ? 'Past event' : days === 0 ? 'Today!' : `${days} ${days === 1 ? 'day' : 'days'}`;
   document.querySelector('#date-metric').textContent = dateLabel(plan.event_date);
   document.querySelector('#budget-metric').textContent = money(plan.budget);
@@ -299,7 +262,7 @@ async function generatePlan(event, persist = true) {
     });
     if (!response.ok) {
       if (response.status === 422) throw new Error('Please check your date, budget, guest count, and other details, then try again.');
-      if (response.status === 429) throw new Error('There are a few plans in progress. Please try again in a moment.');
+      if (response.status === 429) throw new Error(retryMessage(response.headers.get('Retry-After')));
       throw new Error('Your plan couldn’t be created just yet. Please try again in a moment.');
     }
     const nextPlan = await response.json();
@@ -402,7 +365,10 @@ document.querySelector('#print-button').addEventListener('click', () => {
 
 document.querySelector('#reset-button').addEventListener('click', () => {
   if (isLoading) return;
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* Continue in memory when storage is unavailable. */ }
+  if (!planStore.clear()) {
+    inform('Browser storage is unavailable. Your saved plan could not be cleared; download your plan or update browser storage permissions.', true);
+    return;
+  }
   completed = new Set();
   currentPlan = null;
   currentBrief = null;

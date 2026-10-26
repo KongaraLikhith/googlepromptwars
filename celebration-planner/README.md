@@ -55,17 +55,75 @@ Browser: semantic HTML + CSS + JavaScript
        └─ optional Gemini REST request for ideas and tips
 ```
 
-The server is stateless and does not store plans. Browser storage can be cleared from the interface. JSON export is explicit. API validation bounds budgets, guest counts, dates, and text lengths. Security headers and a request-size limit protect the application boundary; model output is rendered as text.
+The intended user is a host planning a wedding or birthday, or a volunteer organizing a community gathering. They need a usable first plan before they have vendor quotes, rather than a chatbot transcript they must turn into a checklist themselves.
+
+### Approach and context decisions
+
+| User context | Planning decision |
+| --- | --- |
+| Wedding, birthday, or community event | Different category weights, ideas, and ceremony, cake, or permits tasks |
+| Up to three priorities | Increase the selected categories' weights while preserving the total |
+| Any supported budget | Reserve 10% contingency; distribute all cents with largest-remainder allocation |
+| Short lead time | Move overdue preparation tasks to today and explain the catch-up work |
+| More than 200 guests | Add capacity, staffing, and emergency-planning guidance |
+| Style, location, and preferences | Include context in the brief and optional Gemini ideas |
+| Missing, busy, invalid, or unavailable AI | Keep the complete deterministic plan and label local suggestions |
+
+Currency is a unit selected by the user, not an exchange-rate conversion. Budgets are estimates; the engine does not infer vendor prices from a city name. Dates use the server's calendar day, with a planning window from today through 730 days ahead. The default category shares and 10% reserve are explicit planning assumptions, not a guarantee that an event is affordable.
+
+### Code map
+
+- `app/schemas.py`: bounded input and AI-output contracts.
+- `app/planner.py`: deterministic budget, timeline, vendors, and local suggestions.
+- `app/ai.py`: optional Gemini enrichment with deadlines and safe fallback.
+- `app/security.py`: typed ASGI body limits, response headers, and bounded request throttling.
+- `app/main.py`: API routes and static-file serving.
+- `app/static/`: semantic interface, presentation, rendering, pure plan helpers, and validated browser storage.
+- `tests/`: planner/API/AI/security tests, frontend unit tests, and browser/accessibility checks.
+
+The server does not persist event plans. Generated plans and edits are saved automatically in the current browser, with visible save status; clearing or exporting a plan is under the user's control. Gemini receives event context only when server-side AI is configured; its provider policies still apply. Logs record safe failure metadata, excluding keys, prompts, preferences, and model output.
+
+### Security boundaries
+
+The API rejects unknown fields and oversized bodies (8 KiB), limits body reading to ten seconds, validates dates, amounts and text, and renders user/model content as text. Same-origin CSP, frame protection, MIME protection, and restricted browser permissions apply to normal and handled error responses. Gemini responses are capped at 32 KiB while streaming, schema-validated, and subject to a 45-second total deadline and four concurrent calls per worker. No automatic retries multiply model charges.
+
+Valid plan requests are limited to 12 per client address per ten minutes, returning HTTP 429 with `Retry-After`. The bounded in-memory limiter uses the ASGI client address and ignores forwarded headers supplied by a caller. It is a best-effort per-worker limit: cold starts and multiple serverless instances do not share counters, and hosts behind a proxy may share an address. Configure provider quotas and an edge/shared rate limiter for broader public traffic. This app has no authentication, booking, payment, or vendor-contact capability.
 
 ## Tests
 
-From this directory with the virtual environment activated:
+For development, install the separate hashed development lockfile in the virtual environment. Python runtime deployments exclude the testing and lint tools.
 
 ```bash
+python -m pip install --require-hashes -r requirements-dev.lock
+ruff check app tests
+ruff format --check app tests
 python -m pytest -q
 ```
 
-The tests cover budget arithmetic, event-specific plans and priorities, scheduling, API validation, security headers, and mocked Gemini success and fallback paths. They do not require a paid API key or make live Google requests. Dependencies are pinned transitively with artifact hashes in `requirements.lock`; `requirements.txt` lists the direct dependencies.
+Frontend unit tests require Node.js 22 or newer and use its built-in test runner:
+
+```bash
+npm test
+```
+
+For the browser suite, install the pinned development-only packages and Chromium:
+
+```bash
+npm ci
+npx playwright install chromium
+```
+
+Start a fresh local server **without** `GEMINI_API_KEY` on port 8087, then run the suite from another terminal:
+
+```bash
+uvicorn app.main:app --host 127.0.0.1 --port 8087
+# In another terminal:
+npm run test:browser
+```
+
+`BASE_URL` overrides the server URL; `CHROMIUM_PATH` selects an existing Chromium executable. The suite checks all event types, exact-cent totals, edits/export, checklist persistence, keyboard tabs, failure recovery, print, six viewport widths, and axe WCAG A/AA scans. Automated accessibility checks cover common issues; they do not replace assistive-technology user testing.
+
+Python tests cover arithmetic, priorities, scheduling, validation, body limits, throttling, security headers, and mocked Gemini success, timeout, malformed output, size limits, and fallback. Frontend tests cover money/date helpers and malformed or unavailable browser storage. These automated suites need no paid AI key; successful Gemini integration must also be checked against the live deployment. `requirements.lock` pins runtime artifacts with hashes; `requirements-dev.lock` adds test/lint tools, and `package-lock.json` pins browser-test tools. No Node packages are shipped to the browser.
 
 ## Vercel deployment
 

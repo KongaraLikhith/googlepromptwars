@@ -9,14 +9,22 @@ from app.schemas import PlanRequest
 
 def request(**changes):
     values = {
-        "event_type": "wedding", "event_date": date.today() + timedelta(days=180),
-        "budget": "250000.01", "currency": "INR", "guest_count": 150,
-        "style": "Garden gathering", "location": "Pune", "priorities": [],
+        "event_type": "wedding",
+        "event_date": date.today() + timedelta(days=180),
+        "budget": "250000.01",
+        "currency": "INR",
+        "guest_count": 150,
+        "style": "Garden gathering",
+        "location": "Pune",
+        "priorities": [],
     }
     return PlanRequest(**(values | changes))
 
 
-@pytest.mark.parametrize("event_type,extra_vendor", [("wedding", "ceremony"), ("birthday", "cake"), ("community", "permits")])
+@pytest.mark.parametrize(
+    "event_type,extra_vendor",
+    [("wedding", "ceremony"), ("birthday", "cake"), ("community", "permits")],
+)
 def test_each_event_has_complete_budget_and_relevant_vendors(event_type, extra_vendor):
     plan = build_plan(request(event_type=event_type))
     assert sum(Decimal(str(item.amount)) for item in plan.budget_items) == Decimal("250000.01")
@@ -62,7 +70,9 @@ def test_today_event_has_no_past_tasks_and_per_guest_rounds_to_cents():
 
 
 def test_local_plan_reflects_event_style_location_and_guest_count():
-    plan = build_plan(request(event_type="birthday", style="Cozy book club", location="Delhi", guest_count=12))
+    plan = build_plan(
+        request(event_type="birthday", style="Cozy book club", location="Delhi", guest_count=12)
+    )
     assert "cozy book club" in plan.summary
     assert "Delhi" in plan.summary and "12 guests" in plan.summary
     assert "12 guests" in next(item.note for item in plan.vendors if item.id == "caterer")
