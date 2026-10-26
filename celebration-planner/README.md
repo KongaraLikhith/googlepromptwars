@@ -36,7 +36,7 @@ The interface supports keyboard navigation, visible focus indicators, labelled i
 
 ## Optional Gemini integration
 
-Set `GEMINI_API_KEY` in the server process or your deployment's secure environment settings. `GEMINI_MODEL` defaults to `gemini-2.5-flash` and can be changed to a model available to your Google project. `.env.example` documents the names; the application does not load a `.env` file automatically.
+Set `GEMINI_API_KEY` in the server process or your deployment's secure environment settings. `GEMINI_MODEL` defaults to `gemini-3.5-flash-lite` and can be changed to a model available to your Google project. `.env.example` documents the names; the application does not load a `.env` file automatically.
 
 The backend calls the Gemini REST API over HTTPS through `httpx`. Only bounded event preferences are sent to Gemini. Do not enter guest names, contact details, payment details, or other private information in the preference field. A failed or unavailable model falls back to useful local suggestions and reports the source honestly.
 
@@ -76,7 +76,7 @@ In the new project's **Settings → Environment Variables**, add:
 | Name | Value |
 | --- | --- |
 | `GEMINI_API_KEY` | A new Gemini API key entered securely in Vercel |
-| `GEMINI_MODEL` | `gemini-2.5-flash`, or another model available to your Google project |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite`, or another model available to your Google project |
 
 Set the variables for the deployment environments you will use, then deploy or redeploy. Never paste real keys into source files, `vercel.json`, command-line arguments, commits, or logs. `.vercelignore` excludes local secret files, virtual environments, caches, and tests from the upload.
 

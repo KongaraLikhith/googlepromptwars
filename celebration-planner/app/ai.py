@@ -17,7 +17,7 @@ async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         return plan
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", model):
         plan.source_note = "Gemini is not configured for this model. Showing the complete local plan and curated ideas."
         return plan
@@ -41,9 +41,15 @@ async def enrich_plan(request: PlanRequest, plan: PlanResponse) -> PlanResponse:
         )
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"responseMimeType": "application/json", "temperature": 0.7, "maxOutputTokens": 1800},
+            "generationConfig": {"responseMimeType": "application/json", "temperature": 0.7, "maxOutputTokens": 2500},
         }
-        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=4.0), follow_redirects=False) as client:
+        if "flash-lite" in model:
+            pass  # Flash-Lite models use their supported default thinking configuration.
+        elif model.startswith("gemini-3"):
+            body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
+        elif model.startswith("gemini-2.5"):
+            body["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=4.0), follow_redirects=False) as client:
             response = await client.post(
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                 headers={"x-goog-api-key": key, "Content-Type": "application/json"}, json=body,

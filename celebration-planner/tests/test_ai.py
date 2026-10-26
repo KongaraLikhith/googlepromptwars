@@ -24,17 +24,34 @@ def test_absent_key_never_constructs_network_client(monkeypatch):
     assert plan.source == "local"
 
 
-def test_successful_gemini_changes_only_ideas_and_adds_tips(monkeypatch):
+@pytest.mark.parametrize("model,expected_model,thinking_config", [
+    (None, "gemini-3.5-flash-lite", None),
+    ("gemini-3.8-flash", "gemini-3.8-flash", {"thinkingLevel": "low"}),
+    ("gemini-2.5-flash-lite", "gemini-2.5-flash-lite", None),
+    ("gemini-2.5-flash", "gemini-2.5-flash", {"thinkingBudget": 0}),
+    ("custom-model", "custom-model", None),
+])
+def test_successful_gemini_changes_only_ideas_and_adds_tips(monkeypatch, model, expected_model, thinking_config):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-a-real-credential")
+    if model is None:
+        monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    else:
+        monkeypatch.setenv("GEMINI_MODEL", model)
     enrichment = {
         "ideas": [{"title": f"Personal idea {index}", "description": "A vegetarian picnic activity."} for index in range(3)],
         "tips": ["Confirm dietary labels.", "Use reusable tableware.", "Offer seated activities."],
     }
     def handle(request):
         assert request.url.host == "generativelanguage.googleapis.com"
+        assert request.url.path == f"/v1beta/models/{expected_model}:generateContent"
         assert request.headers["x-goog-api-key"] == "test-key-not-a-real-credential"
         body = json.loads(request.content)
         assert body["generationConfig"]["responseMimeType"] == "application/json"
+        assert body["generationConfig"]["maxOutputTokens"] == 2500
+        if thinking_config is None:
+            assert "thinkingConfig" not in body["generationConfig"]
+        else:
+            assert body["generationConfig"]["thinkingConfig"] == thinking_config
         assert "untrusted user data" in body["contents"][0]["parts"][0]["text"]
         return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(enrichment)}]}}]})
     real_client = httpx.AsyncClient
