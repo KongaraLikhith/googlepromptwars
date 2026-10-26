@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6f0">
+  <meta name="description" content="A thoughtful event planner for weddings, birthdays, and community gatherings. Bring your budget, timeline, and to-dos together.">
+  <title>Gatherly — Make room for the good moments</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%232f5547'/%3E%3Ctext x='9' y='29' font-size='30' font-family='Georgia' fill='%23ffffff'%3Eg%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#planner">Skip to event planner</a>
+  <header class="site-header shell">
+    <a class="wordmark" href="#" aria-label="Gatherly home"><span class="brand-mark" aria-hidden="true">g<span>✳</span></span>gatherly<span class="brand-period">.</span></a>
+    <div class="header-note"><span class="status-dot" aria-hidden="true"></span>Your next good thing starts here</div>
+    <a class="header-link" href="#planner">Open your planner <span aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M5 15 15 5M5 5h10v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+  </header>
+
+  <main class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="small-star" aria-hidden="true">✳</span> LESS PLANNING STRESS. MORE CELEBRATING.</p>
+        <h1 id="hero-title">Good things start<br>with a <em>great plan.</em></h1>
+        <p class="hero-description">From the first idea to the final little detail. Make a celebration that feels like you, with a budget that works for you.</p>
+        <div class="hero-tags" aria-label="Plan any occasion"><span>Weddings</span><span>Birthdays</span><span>Community moments</span></div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
+        <span class="art-spark spark-one">✧</span><span class="art-spark spark-two">✳</span>
+        <div class="occasion-card"><span class="occasion-eyebrow">THE BEST KIND OF PLAN</span><svg class="flower-art" viewBox="0 0 180 142" fill="none"><path d="M91 131V76M91 109C67 112 52 103 45 87C64 85 82 91 91 109ZM91 120C114 123 130 111 134 98C116 94 99 102 91 120Z" stroke="#39614e" stroke-width="2"/><path d="M91 71C63 60 59 38 73 31C85 25 93 42 93 51C94 22 114 19 119 32C124 44 109 53 101 55C128 48 140 65 130 75C120 86 102 74 98 66C110 92 94 107 82 99C71 91 82 74 91 71Z" fill="#eaa78f" stroke="#aa6046" stroke-width="1.5"/><circle cx="95" cy="61" r="10" fill="#e5b953" stroke="#aa6046" stroke-width="1.5"/></svg><span class="occasion-script">a little more joy.</span><span class="occasion-bottom">THOUGHTFULLY PLANNED. FULLY ENJOYED.</span></div>
+        <div class="tiny-note"><span aria-hidden="true">✓</span> Every detail, together</div>
+      </div>
+    </section>
+
+    <section class="planner-layout" id="planner" aria-label="Your event planning studio">
+      <aside class="brief-card">
+        <div class="card-heading"><span class="step-number">01</span><div><p class="eyebrow">LET’S MAKE IT YOURS</p><h2>Your celebration brief</h2></div></div>
+        <p class="card-intro">A few details. A whole lot of possibility.</p>
+        <form id="event-form">
+          <fieldset class="event-types"><legend>What are we celebrating?</legend><div class="type-options">
+            <label class="type-option"><input type="radio" name="event_type" value="wedding"><span><span class="type-icon" aria-hidden="true">♡</span>Wedding</span></label>
+            <label class="type-option"><input type="radio" name="event_type" value="birthday" checked><span><span class="type-icon" aria-hidden="true">✳</span>Birthday</span></label>
+            <label class="type-option"><input type="radio" name="event_type" value="community"><span><span class="type-icon" aria-hidden="true">☀</span>Community</span></label>
+          </div></fieldset>
+          <div class="field"><label for="event-date">The big day <span class="required-hint">required</span></label><input id="event-date" name="event_date" type="date" required><p class="field-note">Today or any date in the next two years.</p></div>
+          <div class="form-row"><div class="field budget-field"><label for="budget">Total budget</label><div class="budget-input"><select id="currency" name="currency" aria-label="Budget currency"><option value="INR">₹ INR</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option><option value="GBP">£ GBP</option></select><input id="budget" name="budget" type="number" min="100" max="100000000" step="0.01" value="50000" required aria-label="Total event budget"></div></div><div class="field guests-field"><label for="guests">Guests</label><input id="guests" name="guest_count" type="number" min="1" max="10000" step="1" value="40" required></div></div>
+          <div class="field"><label for="location">Where’s the gathering? <span class="optional">optional</span></label><input id="location" name="location" placeholder="e.g. Bengaluru, a garden at home" maxlength="100" autocomplete="off"></div>
+          <div class="field"><label for="style">Set the mood</label><select id="style" name="style"><option value="Relaxed garden gathering">Relaxed garden gathering</option><option value="Elegant and intimate">Elegant and intimate</option><option value="Colorful and playful">Colorful and playful</option><option value="Modern and minimal">Modern and minimal</option><option value="Traditional and heartfelt">Traditional and heartfelt</option><option value="Sustainable and community-led">Sustainable and community-led</option></select></div>
+          <fieldset class="priorities"><legend>What matters most? <span class="optional">choose up to 3</span></legend><div class="priority-options"><label><input type="checkbox" name="priorities" value="food" checked><span>Good food</span></label><label><input type="checkbox" name="priorities" value="decor" checked><span>The atmosphere</span></label><label><input type="checkbox" name="priorities" value="entertainment"><span>Entertainment</span></label><label><input type="checkbox" name="priorities" value="photography"><span>Making memories</span></label><label><input type="checkbox" name="priorities" value="venue"><span>A lovely venue</span></label><label><input type="checkbox" name="priorities" value="accessibility"><span>Accessibility</span></label></div><p class="field-note" id="priorities-note">Your priorities help shape the budget.</p></fieldset>
+          <div class="field"><label for="preferences">Any little details? <span class="optional">optional</span></label><textarea id="preferences" name="preferences" rows="3" maxlength="500" placeholder="Vegetarian menu, step-free access, a love of live music…" aria-describedby="privacy-note"></textarea></div>
+          <p class="privacy-note" id="privacy-note"><span aria-hidden="true">◈</span> Keep it general — no guest names, contact or payment details. Currency is a budget unit, not a conversion.</p>
+          <button class="button button-primary generate-button" id="generate-button" type="submit"><span aria-hidden="true">✧</span><span id="generate-label">Create my celebration plan</span><span aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M5 15 15 5M5 5h10v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+          <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </aside>
+
+      <div class="plan-workspace" id="plan-workspace" aria-busy="true">
+        <div class="workspace-heading"><div><p class="eyebrow">02 &nbsp; A LITTLE CLARITY FOR YOUR BIG DAY</p><h2 id="plan-title">Your celebration, taking shape.</h2></div><span class="plan-badge" id="source-badge"><span class="status-dot" aria-hidden="true"></span>Preparing your plan</span></div>
+        <p class="plan-summary" id="plan-summary">We’re bringing the budget, the timeline, and all those little to-dos together.</p>
+        <div class="summary-grid" aria-label="Event at a glance"><div class="summary-card"><span class="metric-icon" aria-hidden="true">◷</span><span class="metric-label">COUNTING DOWN</span><strong id="days-metric">—</strong><span class="metric-note" id="date-metric">Your date, your moment</span></div><div class="summary-card"><span class="metric-icon" aria-hidden="true">◉</span><span class="metric-label">THE WHOLE BUDGET</span><strong id="budget-metric">—</strong><span class="metric-note" id="per-guest-metric">Thoughtfully allocated</span></div><div class="summary-card"><span class="metric-icon" aria-hidden="true">♧</span><span class="metric-label">GOOD COMPANY</span><strong id="guests-metric">—</strong><span class="metric-note">People to make memories with</span></div></div>
+
+        <section class="plan-card" aria-label="Detailed celebration plan">
+          <div class="plan-toolbar"><div class="tab-list" role="tablist" aria-label="Plan sections"><button type="button" id="tab-budget" class="tab active" role="tab" aria-selected="true" aria-controls="panel-budget" tabindex="0">Budget <span aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M5 15 15 5M5 5h10v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button type="button" id="tab-timeline" class="tab" role="tab" aria-selected="false" aria-controls="panel-timeline" tabindex="-1">Timeline</button><button type="button" id="tab-checklist" class="tab" role="tab" aria-selected="false" aria-controls="panel-checklist" tabindex="-1">Checklist <span class="tab-count" id="checklist-count">0</span></button></div><button type="button" class="icon-button" id="export-button" disabled aria-label="Download your plan as JSON" title="Download your plan"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          <div class="tab-panel" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget"><div class="panel-heading"><div><h3>A budget with breathing room.</h3><p>A thoughtful starting point. Adjust any allocation to make it yours.</p></div><span class="small-chip">ESTIMATES, NOT QUOTES</span></div><div id="budget-list" class="budget-list"><div class="empty-state">Your budget breakdown is on its way.</div></div><div class="budget-footer"><div><span class="budget-footer-label">TOTAL ALLOCATED</span><strong id="allocated-total">—</strong></div><p class="balance-message" id="balance-message" role="status" aria-live="polite">Every little detail has its place.</p></div></div>
+          <div class="tab-panel" id="panel-timeline" role="tabpanel" aria-labelledby="tab-timeline" hidden><div class="panel-heading"><div><h3>One step at a time.</h3><p>Work back from your date, without the last-minute scramble.</p></div></div><ol class="timeline-list" id="timeline-list"></ol><p class="panel-footnote">Planning on a short timeline? Earlier milestones move to today so you can get started.</p></div>
+          <div class="tab-panel" id="panel-checklist" role="tabpanel" aria-labelledby="tab-checklist" hidden><div class="panel-heading"><div><h3>The details, handled.</h3><p>Compare options, confirm the essentials, and tick things off.</p></div><span class="small-chip" id="checklist-progress">0 COMPLETE</span></div><progress id="checklist-bar" class="checklist-progress" value="0" max="1" aria-label="Vendor checklist completion"></progress><div class="vendor-list" id="vendor-list"></div><p class="panel-footnote">This is a vendor planning checklist. No bookings are made and no real vendors are endorsed.</p></div>
+        </section>
+
+        <section class="ideas-card" aria-labelledby="ideas-heading"><div class="ideas-heading"><div><p class="eyebrow"><span aria-hidden="true">✧</span> THE THOUGHTFUL LITTLE EXTRAS</p><h3 id="ideas-heading">Make it feel like <em>you.</em></h3></div><span class="ideas-label" id="ideas-label">Personalized inspiration</span></div><div class="idea-grid" id="idea-grid"><p class="empty-state">A few ideas to make the day your own.</p></div><div class="tips-box" id="tips-box" hidden><strong>A note from your planning companion</strong><ul id="tips-list"></ul></div><p class="source-note" id="source-note">Your core budget and milestones are calculated, with creative ideas to support your planning.</p></section>
+        <div class="workspace-footer"><span id="save-status"><span aria-hidden="true">◈</span> Saved only in this browser</span><div><button type="button" class="text-button" id="print-button" disabled>Print plan <span aria-hidden="true"><svg class="arrow-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false"><path d="M5 15 15 5M5 5h10v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button><button type="button" class="text-button muted" id="reset-button">Clear saved plan</button></div></div>
+        <p class="screen-reader-only" id="plan-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer shell"><a class="footer-wordmark" href="#">gatherly.</a><p>A little structure for life’s lovely moments.</p><span>Built with care. Celebrated together.</span></footer>
+</body>
+</html>
